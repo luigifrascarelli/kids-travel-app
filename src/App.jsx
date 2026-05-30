@@ -479,6 +479,7 @@ const DEFAULT_STATE = {
   dailyChallenge: { dateKey: "", foundToday: 0, goal: 1, completed: false },
   parentUnlocked: false,
   gamesProgress: { flagsUs: {}, flagsWorld: {}, foodsSpot: {}, foodsMatch: {} },
+  lang: "en",
 };
 
 function migrateSave(saved) {
@@ -553,7 +554,8 @@ function appReducer(state, action) {
       const prev = state.gamesProgress[gameId] || {};
       return { ...state, gamesProgress: { ...state.gamesProgress, [gameId]: { ...prev, [itemId]: (prev[itemId] || 0) + 1 } } };
     }
-    case "RESET_PROGRESS": return { ...DEFAULT_STATE, schemaVersion: SCHEMA_VERSION, userName: state.userName, selectedPack: state.selectedPack, onboardingDone: state.onboardingDone, muted: state.muted, activeTab: "home" };
+    case "SET_LANG": return { ...state, lang: action.lang };
+    case "RESET_PROGRESS": return { ...DEFAULT_STATE, schemaVersion: SCHEMA_VERSION, userName: state.userName, selectedPack: state.selectedPack, onboardingDone: state.onboardingDone, muted: state.muted, lang: state.lang, activeTab: "home" };
     default: return state;
   }
 }
@@ -570,27 +572,262 @@ function AppProvider({ children }) {
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  AUDIO ENGINE                                                ║
 // ╚══════════════════════════════════════════════════════════════╝
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LANGUAGE STRINGS & useT HOOK                                ║
+// ╚══════════════════════════════════════════════════════════════╝
+const STRINGS = {
+  en: {
+    // Header
+    subtitle: "Montana Journal",
+    // Nav tabs
+    home: "Home", guide: "Guide", missions: "Missions",
+    spelling: "Spelling", math: "Math", games: "Games", journal: "Journal",
+    // Ranks
+    rank0: "Seedling", rank1: "Cub Ranger", rank2: "Trail Ranger",
+    rank3: "Junior Ranger", rank4: "Montana Ranger",
+    // Home
+    welcomeBack: "WELCOME BACK,", dayOf: "DAY {n} OF YOUR ADVENTURE",
+    startExploring: "Tap Field Guide to start exploring Montana!",
+    foundSoFar: "{found} of {total} things found · {badges} badges earned",
+    whereNext: "Where to next?", recentFinds: "Recent Finds",
+    airportHunt: "Airport Hunt", comingSoon: "Coming soon!",
+    // Field Guide
+    spotSomething: "Spot something? Tap its card to learn more, then stamp",
+    iFoundIt: "I Found It!",
+    foundIt: "✓ FOUND!", alreadyFound: "✓ Already in your Journal!",
+    rangerFact: "RANGER FACT", spellIt: "SPELL IT:",
+    learnMore: "Learn more", readMore: "Read more",
+    zoneComplete: "Zone Complete!",
+    zoneCompleteDesc: "Amazing! You found every {zone}!",
+    stillOutThere: "{n} still out there!",
+    discovered: "{found} of {total} discovered",
+    stampedJournal: "✓ Stamped in your Journal!",
+    // Missions
+    currentRank: "CURRENT RANK", activeMissions: "Active Missions",
+    trophyShelf: "Trophy Shelf", lookFor: "Look for:",
+    earned: "EARNED!", badgeUnlocked: "BADGE UNLOCKED!",
+    woohoo: "Woohoo! 🎉",
+    // Spelling
+    wordSpotter: "WORD SPOTTER", whichOneIs: "Which one is the",
+    tapRightPicture: "Tap the right picture!",
+    youGotItSpell: "You got it! Now let's spell it!",
+    awesome: "Awesome! ⭐",
+    wordsToLearn: "{n} words · tap any to play!",
+    // Math
+    howManyDoYouSee: "How many do you see? 👀",
+    addThem: "Add them together! ➕",
+    howManyLeft: "How many are left? 🤔",
+    countIt: "Count It!", addItUp: "Add It Up!", takeAway: "Take Away!",
+    correct: "correct", streak: "streak", mathStars: "math stars",
+    toStar: "{n} to ⭐", justMore: "Just {n} more correct to earn a Math Star!",
+    // Journal
+    myStats: "My Stats", map: "Map", timeline: "Timeline",
+    isA: "{name} IS A", dayOfAdventure: "Day {n} of your Montana adventure",
+    thingsFound: "Things Found", badgesEarned: "Badges Earned",
+    mathCorrect: "Math Correct", wordsPracticed: "Words Practiced",
+    myAdventureReport: "My Adventure Report",
+    almostRank: "Almost {rank}!",
+    findMoreToLevel: "Find {n} more thing{s} to level up!",
+    journalEmpty: "Your journal is empty!",
+    journalEmptyDesc: "Head to the Field Guide and start finding things!",
+    everyTimeYouFind: "Every time you find something, it lights up on the map! ✨",
+    foundOnMap: "{found} of {total} things found!",
+    // Daily challenge
+    todaysChallenge: "TODAY'S CHALLENGE",
+    challengeDone: "Amazing! You found {n} thing{s} today!",
+    challengeGoal: "Find {goal} thing{s} today — {left} to go!",
+    // Progress export
+    adventureReport: "My Adventure Report",
+    shareAdventure: "Share My Adventure",
+    printKeepsake: "Print as Keepsake",
+    dayN: "Day {n} of Montana",
+    discoveries: "DISCOVERIES",
+    madeWith: "Gabi Aventuras 🌟",
+    // Parent mode
+    parentMode: "Parent Mode",
+    manageAdventure: "Manage {name}'s adventure",
+    customDiscoveries: "Custom Discoveries",
+    addSomething: "Add something to find",
+    pickEmoji: "Pick an emoji:",
+    whatShouldFind: "What should {name} find?",
+    cancel: "Cancel", addIt: "Add It!",
+    resetProgress: "Reset Progress",
+    resetAll: "Reset all progress",
+    resetConfirm: "Are you sure? This will erase everything!",
+    yesReset: "Yes, Reset",
+    // Onboarding
+    hiThere: "Hi there!", whatsYourName: "What's your name?",
+    thatsMe: "That's me! ⭐",
+    whereGoing: "Where are you going?", pickAdventure: "Pick your adventure!",
+    letsGo: "Let's go! ✈️", moreAdventures: "More adventures coming soon!",
+    youAreNowA: "🎉 YOU ARE NOW A 🎉",
+    rangerName: "RANGER {name}!",
+    adventureBegins: "Your Montana adventure begins now. Find animals, earn badges, and explore Big Sky Country!",
+    startExploringBtn: "Start Exploring! 🌲",
+    // Games
+    worldGames: "World Games", juegosDelMundo: "Juegos del Mundo · 4 games to explore!",
+    usStates: "US States", usStatesEs: "Estados de EE.UU.",
+    learnAllStates: "Learn all 50 state flags!", learnAllStatesEs: "¡Aprende las 50 banderas!",
+    worldFlags: "World Flags", worldFlagsEs: "Banderas del Mundo",
+    flagsAllContinents: "Flags from every continent!", flagsAllContinentsEs: "¡Banderas de todos los continentes!",
+    spotFood: "Spot the Food", spotFoodEs: "Identifica la Comida",
+    spotFoodDesc: "Find the right food from 3 choices!", spotFoodDescEs: "¡Encuentra la comida correcta!",
+    matchFood: "Match the Food", matchFoodEs: "Une la Comida",
+    matchFoodDesc: "Match each food to its country!", matchFoodDescEs: "¡Une cada comida con su país!",
+    didYouKnow: "DID YOU KNOW?",
+    worldFact: "There are 195 countries in the world — each with its own flag, food, and language!",
+    worldFactEs: "¡Hay 195 países en el mundo, cada uno con su propia bandera, comida e idioma!",
+    ofLearned: "of {n} learned", ofTasted: "of {n} tasted", complete: "complete ⭐",
+    whichFlagIs: "Which flag is this?", tapRightName: "Tap the right name!",
+    abbreviation: "Abbreviation:", capital: "Capital:",
+    spellItBtn: "Spell It! ✏️", nextArrow: "Next →", nextFlag: "Next Flag! 🌍",
+    whichOneIsFood: "Which one is the", fromCountry: "from",
+    whichCountry: "Which country is this food from?",
+    youGotItFood: "You got it!", nextFood: "Next Food! 🍽️",
+    isFrom: "{food} is from", correctBang: "Correct!",
+  },
+  es: {
+    subtitle: "Diario de Montana",
+    home: "Inicio", guide: "Guía", missions: "Misiones",
+    spelling: "Letras", math: "Mates", games: "Juegos", journal: "Diario",
+    rank0: "Semilla", rank1: "Cub Guardabosque", rank2: "Guardabosque de Sendero",
+    rank3: "Guardabosque Junior", rank4: "Guardabosque de Montana",
+    welcomeBack: "BIENVENIDA,", dayOf: "DÍA {n} DE TU AVENTURA",
+    startExploring: "¡Toca la Guía de Campo para explorar Montana!",
+    foundSoFar: "{found} de {total} cosas encontradas · {badges} insignias",
+    whereNext: "¿A dónde vamos?", recentFinds: "Encuentros Recientes",
+    airportHunt: "Búsqueda en Aeropuerto", comingSoon: "¡Próximamente!",
+    spotSomething: "¿Ves algo? Toca su tarjeta para aprender más, luego marca",
+    iFoundIt: "¡Lo Encontré!",
+    foundIt: "✓ ¡ENCONTRADO!", alreadyFound: "✓ ¡Ya está en tu Diario!",
+    rangerFact: "DATO DEL GUARDABOSQUE", spellIt: "ESCRÍBELO:",
+    learnMore: "Aprender más", readMore: "Leer más",
+    zoneComplete: "¡Zona Completa!",
+    zoneCompleteDesc: "¡Increíble! ¡Encontraste todo en {zone}!",
+    stillOutThere: "¡{n} por encontrar!",
+    discovered: "{found} de {total} descubiertos",
+    stampedJournal: "✓ ¡Marcado en tu Diario!",
+    currentRank: "RANGO ACTUAL", activeMissions: "Misiones Activas",
+    trophyShelf: "Estante de Trofeos", lookFor: "Busca:",
+    earned: "¡GANADA!", badgeUnlocked: "¡INSIGNIA DESBLOQUEADA!",
+    woohoo: "¡Yupi! 🎉",
+    wordSpotter: "BUSCADOR DE PALABRAS", whichOneIs: "¿Cuál es",
+    tapRightPicture: "¡Toca la imagen correcta!",
+    youGotItSpell: "¡Lo lograste! ¡Ahora escríbelo!",
+    awesome: "¡Genial! ⭐",
+    wordsToLearn: "{n} palabras · ¡toca cualquiera para jugar!",
+    howManyDoYouSee: "¿Cuántos ves? 👀",
+    addThem: "¡Súmalos! ➕",
+    howManyLeft: "¿Cuántos quedan? 🤔",
+    countIt: "¡Cuenta!", addItUp: "¡Suma!", takeAway: "¡Resta!",
+    correct: "correctas", streak: "seguidas", mathStars: "estrellas de mates",
+    toStar: "{n} para ⭐", justMore: "¡Solo {n} más para ganar una Estrella de Mates!",
+    myStats: "Mis Estadísticas", map: "Mapa", timeline: "Línea de tiempo",
+    isA: "{name} ES", dayOfAdventure: "Día {n} de tu aventura en Montana",
+    thingsFound: "Cosas Encontradas", badgesEarned: "Insignias Ganadas",
+    mathCorrect: "Mates Correctas", wordsPracticed: "Palabras Practicadas",
+    myAdventureReport: "Mi Reporte de Aventura",
+    almostRank: "¡Casi eres {rank}!",
+    findMoreToLevel: "¡Encuentra {n} cosa{s} más para subir de nivel!",
+    journalEmpty: "¡Tu diario está vacío!",
+    journalEmptyDesc: "¡Ve a la Guía de Campo y empieza a encontrar cosas!",
+    everyTimeYouFind: "¡Cada vez que encuentres algo, se ilumina en el mapa! ✨",
+    foundOnMap: "¡{found} de {total} cosas encontradas!",
+    todaysChallenge: "DESAFÍO DE HOY",
+    challengeDone: "¡Increíble! ¡Encontraste {n} cosa{s} hoy!",
+    challengeGoal: "¡Encuentra {goal} cosa{s} hoy — {left} más!",
+    adventureReport: "Mi Reporte de Aventura",
+    shareAdventure: "Compartir Mi Aventura",
+    printKeepsake: "Imprimir como Recuerdo",
+    dayN: "Día {n} en Montana",
+    discoveries: "DESCUBRIMIENTOS",
+    madeWith: "Gabi Aventuras 🌟",
+    parentMode: "Modo Padres",
+    manageAdventure: "Gestionar la aventura de {name}",
+    customDiscoveries: "Descubrimientos Personalizados",
+    addSomething: "Agrega algo para encontrar",
+    pickEmoji: "Elige un emoji:",
+    whatShouldFind: "¿Qué debe encontrar {name}?",
+    cancel: "Cancelar", addIt: "¡Agregar!",
+    resetProgress: "Reiniciar Progreso",
+    resetAll: "Reiniciar todo el progreso",
+    resetConfirm: "¿Estás seguro? ¡Esto borrará todo!",
+    yesReset: "Sí, Reiniciar",
+    hiThere: "¡Hola!", whatsYourName: "¿Cómo te llamas?",
+    thatsMe: "¡Ese soy yo! ⭐",
+    whereGoing: "¿A dónde vas?", pickAdventure: "¡Elige tu aventura!",
+    letsGo: "¡Vamos! ✈️", moreAdventures: "¡Más aventuras próximamente!",
+    youAreNowA: "🎉 AHORA ERES 🎉",
+    rangerName: "¡GUARDABOSQUE {name}!",
+    adventureBegins: "¡Tu aventura en Montana comienza ahora. Encuentra animales, gana insignias y explora el País del Gran Cielo!",
+    startExploringBtn: "¡Explorar! 🌲",
+    worldGames: "Juegos del Mundo", juegosDelMundo: "World Games · ¡4 juegos para explorar!",
+    usStates: "Estados de EE.UU.", usStatesEs: "US States",
+    learnAllStates: "¡Aprende las 50 banderas de los estados!", learnAllStatesEs: "Learn all 50 state flags!",
+    worldFlags: "Banderas del Mundo", worldFlagsEs: "World Flags",
+    flagsAllContinents: "¡Banderas de todos los continentes!", flagsAllContinentsEs: "Flags from every continent!",
+    spotFood: "Identifica la Comida", spotFoodEs: "Spot the Food",
+    spotFoodDesc: "¡Encuentra la comida correcta entre 3 opciones!", spotFoodDescEs: "Find the right food from 3 choices!",
+    matchFood: "Une la Comida", matchFoodEs: "Match the Food",
+    matchFoodDesc: "¡Une cada comida con su país!", matchFoodDescEs: "Match each food to its country!",
+    didYouKnow: "¿SABÍAS QUE?",
+    worldFact: "¡Hay 195 países en el mundo, cada uno con su propia bandera, comida e idioma!",
+    worldFactEs: "There are 195 countries in the world — each with its own flag, food, and language!",
+    ofLearned: "de {n} aprendidas", ofTasted: "de {n} probadas", complete: "completado ⭐",
+    whichFlagIs: "¿De qué bandera es esta?", tapRightName: "¡Toca el nombre correcto!",
+    abbreviation: "Abreviatura:", capital: "Capital:",
+    spellItBtn: "¡Escríbelo! ✏️", nextArrow: "Siguiente →", nextFlag: "¡Siguiente Bandera! 🌍",
+    whichOneIsFood: "¿Cuál es", fromCountry: "de",
+    whichCountry: "¿De qué país viene esta comida?",
+    youGotItFood: "¡Lo lograste!", nextFood: "¡Siguiente Comida! 🍽️",
+    isFrom: "{food} es de", correctBang: "¡Correcto!",
+  }
+};
+
+// Helper to interpolate {vars} in strings
+function t(str, vars = {}) {
+  if (!str) return "";
+  return Object.entries(vars).reduce((s, [k, v]) => s.replace(new RegExp(`\{${k}\}`, "g"), v), str);
+}
+
+function useLang() {
+  const { state } = useApp();
+  const lang = state.lang || "en";
+  const S = STRINGS[lang];
+  return { lang, S, t };
+}
+
 function useAudio() {
   const { state } = useApp();
   const { muted } = state;
-  const name = state.userName || "Ranger";
+  const lang = state.lang || "en";
+  const name = state.userName || (lang === "es" ? "Explorador" : "Ranger");
   const speak = useCallback((text, opts = {}) => {
     if (muted || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = opts.rate || 0.85; u.pitch = opts.pitch || 1.15; u.volume = opts.volume || 1;
+    if (lang === "es") u.lang = "es-MX";
     window.speechSynthesis.speak(u);
-  }, [muted]);
+  }, [muted, lang]);
+
+  const tryAgainPhrases = {
+    en: ["Oops! Try again!", "Not quite!", "Almost!"],
+    es: ["¡Ups! ¡Intenta de nuevo!", "¡Casi!", "¡Inténtalo otra vez!"],
+  };
+  const mathPrompts = {
+    en: { count: "How many can you count? Tap the right number!", add: "Add them together! How many altogether?", subtract: "How many are left? Count the ones not crossed out!" },
+    es: { count: "¿Cuántos puedes contar? ¡Toca el número correcto!", add: "¡Súmalos! ¿Cuántos hay en total?", subtract: "¿Cuántos quedan? ¡Cuenta los que no están tachados!" },
+  };
+
   return {
-    speakWord: (word) => speak(`Can you find… the ${word}?`),
+    speakWord: (word) => speak(lang === "es" ? `¿Puedes encontrar… el ${word}?` : `Can you find… the ${word}?`),
     speakCorrect: (praise) => speak(praise.replace(/[🌟🎉🔥⭐💫🏅]/g, ""), { pitch: 1.3, rate: 0.9 }),
-    speakTryAgain: () => speak(["Oops! Try again!", "Not quite!", "Almost!"][Math.floor(Math.random() * 3)], { pitch: 1.2 }),
-    speakMathPrompt: (p) => {
-      const t = { count: "How many can you count? Tap the right number!", add: `Add them together! How many altogether?`, subtract: "How many are left? Count the ones not crossed out!" };
-      speak(t[p.mode] || "");
-    },
-    speakFound: (n) => speak(`Amazing! You found a ${n}!`, { pitch: 1.2 }),
-    speakWelcome: () => speak(`Welcome, ${name}! Ready for a Montana adventure?`, { pitch: 1.1 }),
+    speakTryAgain: () => speak(tryAgainPhrases[lang][Math.floor(Math.random() * 3)], { pitch: 1.2 }),
+    speakMathPrompt: (p) => { speak(mathPrompts[lang][p.mode] || ""); },
+    speakFound: (n) => speak(lang === "es" ? `¡Increíble! ¡Encontraste un ${n}!` : `Amazing! You found a ${n}!`, { pitch: 1.2 }),
+    speakWelcome: () => speak(lang === "es" ? `¡Bienvenida, ${name}! ¿Lista para tu aventura en Montana?` : `Welcome, ${name}! Ready for a Montana adventure?`, { pitch: 1.1 }),
     speakPhrase: speak, muted,
   };
 }
@@ -624,6 +861,7 @@ const KEYBOARD_ROWS = [
 
 function OnboardingScreen() {
   const { dispatch } = useApp();
+  const { S } = useLang();
   const [screen, setScreen] = useState(0); // 0=name, 1=location, 2=badge
   const [name, setName] = useState("");
   const [badgeVisible, setBadgeVisible] = useState(false);
@@ -658,8 +896,8 @@ function OnboardingScreen() {
       {screen === 0 && (
         <div style={{ width: "100%", padding: "60px 24px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: 1 }}>
           <div style={{ fontSize: 64, marginBottom: 16, animation: "popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275)" }}>👋</div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 32, letterSpacing: 2, textAlign: "center", marginBottom: 6 }}>Hi there!</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 18, textAlign: "center", marginBottom: 28 }}>What's your name?</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 32, letterSpacing: 2, textAlign: "center", marginBottom: 6 }}>{S.hiThere}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 18, textAlign: "center", marginBottom: 28 }}>{S.whatsYourName}</div>
 
           {/* Name display */}
           <div style={{ minHeight: 64, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 24, flexWrap: "wrap" }}>
@@ -692,7 +930,7 @@ function OnboardingScreen() {
             style={{ width: "100%", maxWidth: 320, padding: "18px", background: name.trim().length > 0 ? `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})` : "rgba(255,255,255,0.15)", border: "none", borderRadius: 20, fontFamily: "'Luckiest Guy',cursive", fontSize: 22, color: name.trim().length > 0 ? BLUE.deepest : "rgba(255,255,255,0.4)", cursor: name.trim().length > 0 ? "pointer" : "default", boxShadow: name.trim().length > 0 ? `0 6px 0 ${BLUE.goldDark}` : "none", transition: "all 0.2s" }}
             onPointerDown={e => name.trim().length > 0 && (e.currentTarget.style.transform = "translateY(4px)")}
             onPointerUp={e => e.currentTarget.style.transform = "translateY(0)"}
-          >That's me! ⭐</button>
+          >{S.thatsMe}</button>
         </div>
       )}
 
@@ -700,8 +938,8 @@ function OnboardingScreen() {
       {screen === 1 && (
         <div style={{ width: "100%", padding: "60px 24px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: 1 }}>
           <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22, letterSpacing: 2, marginBottom: 8, animation: "fadeIn 0.4s ease" }}>Hi, {name}!</div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 28, letterSpacing: 1, textAlign: "center", marginBottom: 8 }}>Where are you going?</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 16, marginBottom: 32, textAlign: "center" }}>Pick your adventure!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 28, letterSpacing: 1, textAlign: "center", marginBottom: 8 }}>{S.whereGoing}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 16, marginBottom: 32, textAlign: "center" }}>{S.pickAdventure}</div>
 
           {/* Montana card */}
           <div onClick={handleLocationPick}
@@ -712,13 +950,13 @@ function OnboardingScreen() {
             <div style={{ fontSize: 72, marginBottom: 12 }}>🏔️</div>
             <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 30, letterSpacing: 2 }}>MONTANA</div>
             <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 16, marginTop: 4 }}>Big Sky Country</div>
-            <div style={{ marginTop: 16, background: BLUE.gold, borderRadius: 14, padding: "10px 20px", display: "inline-block", fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.deepest }}>Let's go! ✈️</div>
+            <div style={{ marginTop: 16, background: BLUE.gold, borderRadius: 14, padding: "10px 20px", display: "inline-block", fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.deepest }}>{S.letsGo}</div>
           </div>
 
           {/* Coming soon */}
           <div style={{ marginTop: 16, width: "100%", maxWidth: 340, background: "rgba(255,255,255,0.06)", borderRadius: 20, padding: "18px 20px", border: "2px dashed rgba(255,255,255,0.2)", textAlign: "center", opacity: 0.6 }}>
             <div style={{ fontSize: 32, marginBottom: 6 }}>✈️ 🏖️ 🌴</div>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 14 }}>More adventures coming soon!</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 14 }}>{S.moreAdventures}</div>
           </div>
         </div>
       )}
@@ -726,15 +964,15 @@ function OnboardingScreen() {
       {/* Screen 2: Ranger badge */}
       {screen === 2 && (
         <div style={{ width: "100%", padding: "60px 24px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: 1 }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 3, marginBottom: 16, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s" }}>🎉 YOU ARE NOW A 🎉</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 3, marginBottom: 16, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s" }}>{S.youAreNowA}</div>
           <div style={{ width: 160, height: 160, borderRadius: "50%", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80, boxShadow: `0 0 0 12px ${BLUE.gold}30,0 20px 60px ${BLUE.goldDark}60`, transform: badgeVisible ? "scale(1)" : "scale(0)", transition: "transform 0.6s cubic-bezier(0.175,0.885,0.32,1.275)", marginBottom: 20 }}>🏕️</div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 36, letterSpacing: 2, textAlign: "center", opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s 0.3s", marginBottom: 8 }}>RANGER {name.toUpperCase()}!</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 17, textAlign: "center", lineHeight: 1.6, maxWidth: 280, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s 0.5s", marginBottom: 36 }}>Your Montana adventure begins now. Find animals, earn badges, and explore Big Sky Country!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 36, letterSpacing: 2, textAlign: "center", opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s 0.3s", marginBottom: 8 }}>{t(S.rangerName, {name: name.toUpperCase()})}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 17, textAlign: "center", lineHeight: 1.6, maxWidth: 280, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s 0.5s", marginBottom: 36 }}>{S.adventureBegins}</div>
           <button onClick={handleFinish}
             style={{ width: "100%", maxWidth: 320, padding: "20px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 20, fontFamily: "'Luckiest Guy',cursive", fontSize: 24, color: BLUE.deepest, cursor: "pointer", boxShadow: `0 8px 0 ${BLUE.goldDark}`, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.5s 0.7s", letterSpacing: 1 }}
             onPointerDown={e => e.currentTarget.style.transform = "translateY(6px)"}
             onPointerUp={e => e.currentTarget.style.transform = "translateY(0)"}
-          >Start Exploring! 🌲</button>
+          >{S.startExploringBtn}</button>
         </div>
       )}
     </div>
@@ -746,6 +984,7 @@ function OnboardingScreen() {
 // ╚══════════════════════════════════════════════════════════════╝
 function DailyChallengeBanner() {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const { dailyChallenge } = state;
   const todayKey = getTodayKey();
   const isToday = dailyChallenge.dateKey === todayKey;
@@ -758,9 +997,9 @@ function DailyChallengeBanner() {
       <div style={{ background: done ? `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})` : `linear-gradient(135deg,${BLUE.pale},white)`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ fontSize: 28, flexShrink: 0 }}>{done ? "🏆" : "🎯"}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 13, color: done ? BLUE.deepest : BLUE.dark, letterSpacing: 1 }}>TODAY'S CHALLENGE</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 13, color: done ? BLUE.deepest : BLUE.dark, letterSpacing: 1 }}>{S.todaysChallenge}</div>
           <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: done ? BLUE.deepest : BLUE.mid, marginTop: 2 }}>
-            {done ? `Amazing! You found ${foundToday} thing${foundToday > 1 ? "s" : ""} today!` : `Find ${goal} thing${goal > 1 ? "s" : ""} today — ${Math.max(0, goal - foundToday)} to go!`}
+{done ? t(S.challengeDone, {n: foundToday, s: foundToday > 1 ? (state.lang==="es" ? "s" : "s") : ""}) : t(S.challengeGoal, {goal, s: goal > 1 ? "s" : "", left: Math.max(0, goal - foundToday)})}
           </div>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
@@ -780,6 +1019,7 @@ function DailyChallengeBanner() {
 // ╚══════════════════════════════════════════════════════════════╝
 function ProgressExportSheet({ onClose }) {
   const { state } = useApp();
+  const { S } = useLang();
   const { discovered, earnedBadges, mathStats, spellingStars, discoveryLog, dailyChallenge } = state;
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
@@ -823,7 +1063,7 @@ function ProgressExportSheet({ onClose }) {
         </div>
 
         <div style={{ padding: "16px 20px" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 22, letterSpacing: 1, marginBottom: 16, textAlign: "center" }}>My Adventure Report</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 22, letterSpacing: 1, marginBottom: 16, textAlign: "center" }}>{S.adventureReport}</div>
 
           {/* Summary card — screenshot-friendly */}
           <div id="adventure-card" style={{ background: `linear-gradient(135deg,${BLUE.deepest},${BLUE.dark})`, borderRadius: 24, padding: "24px 20px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
@@ -832,7 +1072,7 @@ function ProgressExportSheet({ onClose }) {
               <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>🏕️</div>
               <div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22, letterSpacing: 1 }}>{name.toUpperCase()}</div>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 13 }}>{rank.label} · Day {tripDay} of Montana</div>
+                <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 13 }}>{rank.label} · {t(S.dayN, {n: tripDay})}</div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -851,7 +1091,7 @@ function ProgressExportSheet({ onClose }) {
             </div>
             {totalFound > 0 && (
               <div style={{ marginTop: 12, background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 14px" }}>
-                <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>DISCOVERIES</div>
+                <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>{S.discoveries}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {allItems.filter(i => discovered[i.id]).map(i => (
                     <span key={i.id} style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 12, background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "2px 8px" }}>{i.emoji} {i.name}</span>
@@ -859,16 +1099,16 @@ function ProgressExportSheet({ onClose }) {
                 </div>
               </div>
             )}
-            <div style={{ marginTop: 12, fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.4)", fontSize: 11, textAlign: "center" }}>Gabi Aventuras 🌟</div>
+            <div style={{ marginTop: 12, fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.4)", fontSize: 11, textAlign: "center" }}>{S.madeWith}</div>
           </div>
 
           {/* Action buttons */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button onClick={handleShare} style={{ width: "100%", background: `linear-gradient(135deg,${BLUE.mid},${BLUE.dark})`, color: "white", border: "none", borderRadius: 18, padding: "16px", fontFamily: "'Luckiest Guy',cursive", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <Share2 size={20} color="white" /> Share My Adventure
+              <Share2 size={20} color="white" /> {S.shareAdventure}
             </button>
             <button onClick={handlePrint} style={{ width: "100%", background: BLUE.pale, color: BLUE.dark, border: `2px solid ${BLUE.light}`, borderRadius: 18, padding: "14px", fontFamily: "'Luckiest Guy',cursive", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <Printer size={18} color={BLUE.dark} /> Print as Keepsake
+              <Printer size={18} color={BLUE.dark} /> {S.printKeepsake}
             </button>
           </div>
         </div>
@@ -882,6 +1122,7 @@ function ProgressExportSheet({ onClose }) {
 // ╚══════════════════════════════════════════════════════════════╝
 function ParentModeSheet({ onClose }) {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const [confirmReset, setConfirmReset] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("⭐");
@@ -922,14 +1163,14 @@ function ParentModeSheet({ onClose }) {
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
             <div style={{ width: 48, height: 48, borderRadius: 14, background: `${BLUE.gold}20`, display: "flex", alignItems: "center", justifyContent: "center" }}><Settings size={24} color={BLUE.goldDark} /></div>
             <div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, letterSpacing: 1 }}>Parent Mode</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#8BA0B8", fontSize: 13 }}>Manage {state.userName || "Ranger"}'s adventure</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, letterSpacing: 1 }}>{S.parentMode}</div>
+              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#8BA0B8", fontSize: 13 }}>{t(S.manageAdventure, {name: state.userName || "Ranger"})}</div>
             </div>
           </div>
 
           {/* Custom items section */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 15, letterSpacing: 1, marginBottom: 10 }}>Custom Discoveries</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 15, letterSpacing: 1, marginBottom: 10 }}>{S.customDiscoveries}</div>
             {state.customItems.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
                 {state.customItems.map(item => (
@@ -945,11 +1186,11 @@ function ParentModeSheet({ onClose }) {
             )}
             {!addMode ? (
               <button onClick={() => setAddMode(true)} style={{ width: "100%", padding: "12px", background: "white", border: `2px dashed ${BLUE.light}`, borderRadius: 14, fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: BLUE.mid, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Plus size={18} color={BLUE.mid} /> Add something to find
+                <Plus size={18} color={BLUE.mid} /> {S.addSomething}
               </button>
             ) : (
               <div style={{ background: BLUE.sky, borderRadius: 16, padding: "16px", border: `2px solid ${BLUE.light}` }}>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: BLUE.mid, marginBottom: 8 }}>Pick an emoji:</div>
+                <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: BLUE.mid, marginBottom: 8 }}>{S.pickEmoji}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                   {EMOJI_OPTIONS.map(e => (
                     <button key={e} onClick={() => setNewItemEmoji(e)} style={{ width: 36, height: 36, borderRadius: 10, background: newItemEmoji === e ? BLUE.mid : "white", border: `2px solid ${newItemEmoji === e ? BLUE.mid : BLUE.light}`, fontSize: 20, cursor: "pointer" }}>{e}</button>
@@ -958,12 +1199,12 @@ function ParentModeSheet({ onClose }) {
                 <input
                   value={newItemName}
                   onChange={e => setNewItemName(e.target.value)}
-                  placeholder="What should Gabi find?"
+                  placeholder={t(S.whatShouldFind, {name: state.userName || "Gabi"})}
                   style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `2px solid ${BLUE.light}`, fontFamily: "'Patrick Hand',cursive", fontSize: 16, color: BLUE.dark, background: "white", marginBottom: 10, outline: "none", boxSizing: "border-box" }}
                 />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setAddMode(false)} style={{ flex: 1, padding: "10px", background: "#F0F5FA", border: "none", borderRadius: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, cursor: "pointer" }}>Cancel</button>
-                  <button onClick={handleAddItem} disabled={!newItemName.trim()} style={{ flex: 2, padding: "10px", background: newItemName.trim() ? `linear-gradient(135deg,${BLUE.mid},${BLUE.dark})` : "#D0DDE8", border: "none", borderRadius: 12, fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: newItemName.trim() ? "white" : "#A0B0C0", cursor: newItemName.trim() ? "pointer" : "default" }}>Add It!</button>
+                  <button onClick={() => setAddMode(false)} style={{ flex: 1, padding: "10px", background: "#F0F5FA", border: "none", borderRadius: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, cursor: "pointer" }}>{S.cancel}</button>
+                  <button onClick={handleAddItem} disabled={!newItemName.trim()} style={{ flex: 2, padding: "10px", background: newItemName.trim() ? `linear-gradient(135deg,${BLUE.mid},${BLUE.dark})` : "#D0DDE8", border: "none", borderRadius: 12, fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: newItemName.trim() ? "white" : "#A0B0C0", cursor: newItemName.trim() ? "pointer" : "default" }}>{S.addIt}</button>
                 </div>
               </div>
             )}
@@ -971,17 +1212,17 @@ function ParentModeSheet({ onClose }) {
 
           {/* Reset */}
           <div style={{ borderTop: `2px solid ${BLUE.pale}`, paddingTop: 16 }}>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#C0392B", fontSize: 15, letterSpacing: 1, marginBottom: 8 }}>Reset Progress</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#C0392B", fontSize: 15, letterSpacing: 1, marginBottom: 8 }}>{S.resetProgress}</div>
             {!confirmReset ? (
               <button onClick={() => setConfirmReset(true)} style={{ width: "100%", padding: "14px", background: "#FFF0F0", border: "2px solid #FFB3B3", borderRadius: 14, fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: "#C0392B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Trash2 size={18} color="#C0392B" /> Reset all progress
+                <Trash2 size={18} color="#C0392B" /> {S.resetAll}
               </button>
             ) : (
               <div style={{ background: "#FFF0F0", borderRadius: 14, padding: "16px", border: "2px solid #FFB3B3" }}>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: "#C0392B", marginBottom: 12, textAlign: "center" }}>Are you sure? This will erase everything!</div>
+                <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: "#C0392B", marginBottom: 12, textAlign: "center" }}>{S.resetConfirm}</div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "12px", background: "white", border: `2px solid ${BLUE.light}`, borderRadius: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.dark, cursor: "pointer" }}>Cancel</button>
-                  <button onClick={handleReset} style={{ flex: 1, padding: "12px", background: "#C0392B", border: "none", borderRadius: 12, fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: "white", cursor: "pointer" }}>Yes, Reset</button>
+                  <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "12px", background: "white", border: `2px solid ${BLUE.light}`, borderRadius: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.dark, cursor: "pointer" }}>{S.cancel}</button>
+                  <button onClick={handleReset} style={{ flex: 1, padding: "12px", background: "#C0392B", border: "none", borderRadius: 12, fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: "white", cursor: "pointer" }}>{S.yesReset}</button>
                 </div>
               </div>
             )}
@@ -1006,22 +1247,42 @@ function Confetti() {
 }
 
 function BadgeCelebration({ badge, onDone }) {
+  const { S } = useLang();
   return (
     <>{<Confetti />}
       <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,45,79,0.75)", backdropFilter: "blur(8px)", animation: "fadeIn 0.3s ease" }}>
         <div style={{ background: "white", borderRadius: 32, padding: "44px 36px 36px", textAlign: "center", maxWidth: 340, width: "88%", boxShadow: `0 40px 100px rgba(0,0,0,0.4),0 0 0 6px ${badge.accent}60`, animation: "badgeSlam 0.5s cubic-bezier(0.175,0.885,0.32,1.275)", position: "relative" }}>
-          <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(90deg,${BLUE.gold},${BLUE.goldDark})`, borderRadius: 30, padding: "6px 24px", fontFamily: "'Luckiest Guy',cursive", fontSize: 13, color: "white", letterSpacing: 2, border: "3px solid white", whiteSpace: "nowrap" }}>BADGE UNLOCKED!</div>
+          <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(90deg,${BLUE.gold},${BLUE.goldDark})`, borderRadius: 30, padding: "6px 24px", fontFamily: "'Luckiest Guy',cursive", fontSize: 13, color: "white", letterSpacing: 2, border: "3px solid white", whiteSpace: "nowrap" }}>{S.badgeUnlocked}</div>
           <div style={{ width: 120, height: 120, borderRadius: "50%", background: `linear-gradient(135deg,${badge.accent},${badge.color})`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 56, boxShadow: `0 0 0 8px ${badge.accent}30,0 12px 40px ${badge.color}60`, animation: "badgePulse 1.5s ease-in-out infinite" }}>{badge.emoji}</div>
           <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 28, color: badge.color, letterSpacing: 1, marginBottom: 8 }}>{badge.name}</div>
           <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 16, color: BLUE.dark, lineHeight: 1.5, marginBottom: 24, background: BLUE.sky, borderRadius: 14, padding: "12px 16px" }}>{badge.desc}</div>
           <button onClick={onDone} style={{ width: "100%", background: `linear-gradient(135deg,${badge.accent},${badge.color})`, color: "white", border: "none", borderRadius: 20, padding: "16px", fontFamily: "'Luckiest Guy',cursive", fontSize: 22, letterSpacing: 1, cursor: "pointer", boxShadow: `0 6px 0 ${badge.color}` }}
             onPointerDown={e => e.currentTarget.style.transform = "translateY(5px)"}
             onPointerUp={e => e.currentTarget.style.transform = "translateY(0)"}
-          >Woohoo! 🎉</button>
+          >{S.woohoo}</button>
         </div>
       </div>
       <style>{`@keyframes badgeSlam{from{transform:scale(0.1) rotate(-15deg);opacity:0}70%{transform:scale(1.08) rotate(2deg)}to{transform:scale(1) rotate(0deg);opacity:1}}@keyframes badgePulse{0%,100%{box-shadow:0 0 0 8px ${badge.accent}30,0 12px 40px ${badge.color}60}50%{box-shadow:0 0 0 16px ${badge.accent}18,0 12px 40px ${badge.color}80}}`}</style>
     </>
+  );
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LANGUAGE TOGGLE BUTTON                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+function LangToggle() {
+  const { state, dispatch } = useApp();
+  const lang = state.lang || "en";
+  return (
+    <button
+      onClick={() => dispatch({ type: "SET_LANG", lang: lang === "en" ? "es" : "en" })}
+      style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 20, padding: "4px 10px", cursor: "pointer", gap: 4, height: 36 }}
+    >
+      <span style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 12, color: lang === "en" ? "white" : "rgba(255,255,255,0.45)", letterSpacing: 0.5, transition: "color 0.2s" }}>EN</span>
+      <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>|</span>
+      <span style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 12, color: lang === "es" ? "white" : "rgba(255,255,255,0.45)", letterSpacing: 0.5, transition: "color 0.2s" }}>ES</span>
+    </button>
   );
 }
 
@@ -1037,14 +1298,15 @@ function MuteButton() {
 function BottomNav() {
   const { state, dispatch } = useApp();
   const { activeTab, newBadgeCount } = state;
+  const { S } = useLang();
   const tabs = [
-    { id: "home",     label: "Home",     Icon: Home },
-    { id: "guide",    label: "Guide",    Icon: Search },
-    { id: "missions", label: "Missions", Icon: Trophy },
-    { id: "spelling", label: "Spelling", Icon: BookOpen },
-    { id: "math",     label: "Math",     Icon: Calculator },
-    { id: "games",    label: "Games",    Icon: Gamepad2 },
-    { id: "journal",  label: "Journal",  Icon: BookMarked },
+    { id: "home",     label: S.home,     Icon: Home },
+    { id: "guide",    label: S.guide,    Icon: Search },
+    { id: "missions", label: S.missions, Icon: Trophy },
+    { id: "spelling", label: S.spelling, Icon: BookOpen },
+    { id: "math",     label: S.math,     Icon: Calculator },
+    { id: "games",    label: S.games,    Icon: Gamepad2 },
+    { id: "journal",  label: S.journal,  Icon: BookMarked },
   ];
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "white", borderTop: `2px solid ${BLUE.pale}`, display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch", boxShadow: "0 -4px 24px rgba(13,45,79,0.12)", maxWidth: 600, margin: "0 auto", paddingBottom: "env(safe-area-inset-bottom)", scrollbarWidth: "none" }}>
@@ -1071,6 +1333,7 @@ function BottomNav() {
 // ╚══════════════════════════════════════════════════════════════╝
 function DetailSheet({ item, zone, onClose }) {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const { speakFound } = useAudio();
   const [pressing, setPressing] = useState(false);
   const [justFound, setJustFound] = useState(false);
@@ -1097,20 +1360,20 @@ function DetailSheet({ item, zone, onClose }) {
           <div style={{ background: `linear-gradient(135deg,${zone.bg},${BLUE.pale})`, border: `2px solid ${zone.accent}40`, borderRadius: 18, padding: "16px 18px", margin: "16px 0", display: "flex", gap: 12, alignItems: "flex-start" }}>
             <Lightbulb size={28} color={zone.color} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 11, color: zone.color, letterSpacing: 2, marginBottom: 4 }}>RANGER FACT</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 11, color: zone.color, letterSpacing: 2, marginBottom: 4 }}>{S.rangerFact}</div>
               <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 17, color: BLUE.deepest, lineHeight: 1.5 }}>{item.fact}</div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 12, color: BLUE.mid, letterSpacing: 1 }}>SPELL IT:</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 12, color: BLUE.mid, letterSpacing: 1 }}>{S.spellIt}</div>
             {item.letters.split("").map((l, i) => <div key={i} style={{ width: 34, height: 34, borderRadius: 8, background: BLUE.pale, border: `2px solid ${BLUE.light}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.dark }}>{l}</div>)}
           </div>
           {!state.discovered[item.id] ? (
             <button onPointerDown={() => setPressing(true)} onPointerUp={() => { setPressing(false); handleFound(); }} onPointerLeave={() => setPressing(false)} disabled={justFound}
               style={{ width: "100%", background: justFound ? "linear-gradient(135deg,#5C7A3E,#3D5C28)" : pressing ? zone.color : `linear-gradient(135deg,${zone.accent},${zone.color})`, color: "white", border: "none", borderRadius: 20, padding: "18px", fontFamily: "'Luckiest Guy',cursive", fontSize: 22, letterSpacing: 1, cursor: justFound ? "default" : "pointer", boxShadow: pressing || justFound ? "none" : `0 6px 0 ${zone.color}`, transform: pressing ? "translateY(5px)" : "translateY(0)", transition: "all 0.12s" }}
-            >{justFound ? "✓ Stamped in your Journal!" : "I Found It! 🌟"}</button>
+            >{justFound ? S.stampedJournal : `${S.iFoundIt} 🌟`}</button>
           ) : (
-            <div style={{ width: "100%", background: `${zone.accent}18`, border: `2px solid ${zone.accent}40`, borderRadius: 20, padding: "16px", textAlign: "center", fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: zone.color }}>✓ Already in your Journal!</div>
+            <div style={{ width: "100%", background: `${zone.accent}18`, border: `2px solid ${zone.accent}40`, borderRadius: 20, padding: "16px", textAlign: "center", fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: zone.color }}>{S.alreadyFound}</div>
           )}
         </div>
       </div>
@@ -1120,6 +1383,7 @@ function DetailSheet({ item, zone, onClose }) {
 
 function ItemCard({ item, zone, onTap }) {
   const { state } = useApp();
+  const { S } = useLang();
   const discovered = state.discovered[item.id];
   const [pressing, setPressing] = useState(false);
   return (
@@ -1130,7 +1394,7 @@ function ItemCard({ item, zone, onTap }) {
       <div style={{ width: "100%", display: "flex", justifyContent: "center" }}><ItemCharacter itemId={item.id} size={76} /></div>
       <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: discovered ? zone.color : BLUE.dark, textAlign: "center", lineHeight: 1.3 }}>{item.name}</div>
       <div style={{ background: discovered ? `${zone.accent}18` : BLUE.pale, borderRadius: 10, padding: "6px 12px", fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: discovered ? zone.color : BLUE.mid, border: `1px solid ${discovered ? zone.accent + "40" : BLUE.light}`, width: "100%", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        {discovered ? <><CheckCircle2 size={13} color={zone.color} />Read more</> : <><Search size={12} color={BLUE.mid} />Learn more</>}
+        {discovered ? <><CheckCircle2 size={13} color={zone.color} />{S.readMore}</> : <><Search size={12} color={BLUE.mid} />{S.learnMore}</>}
       </div>
     </div>
   );
@@ -1138,6 +1402,7 @@ function ItemCard({ item, zone, onTap }) {
 
 function ZoneTab({ zone, active, onClick }) {
   const { state } = useApp();
+  const { S } = useLang();
   const count = zone.items.filter(i => state.discovered[i.id]).length;
   return (
     <button onClick={onClick} style={{ flex: 1, padding: "10px 4px", background: active ? `linear-gradient(135deg,${zone.color},${zone.accent})` : "transparent", border: "none", borderRadius: 16, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, boxShadow: active ? `0 4px 14px ${zone.accent}50` : "none" }}>
@@ -1150,6 +1415,7 @@ function ZoneTab({ zone, active, onClick }) {
 
 function FieldGuideTab() {
   const { state } = useApp();
+  const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const [activeZoneId, setActiveZoneId] = useState(pack.zones[0].id);
   const [openItem, setOpenItem] = useState(null);
@@ -1169,12 +1435,12 @@ function FieldGuideTab() {
         <div>
           <div style={{ fontFamily: "'Luckiest Guy',cursive", color: zone.color, fontSize: 22, letterSpacing: 1, lineHeight: 1 }}>{zone.label}</div>
           <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#6B8BAA", fontSize: 13, marginTop: 2 }}>
-            {zone.items.filter(i => state.discovered[i.id]).length} of {zone.items.length} discovered · <span style={{ color: zone.accent }}>{zone.items.length - zone.items.filter(i => state.discovered[i.id]).length} still out there!</span>
+            {t(S.discovered, {found: zone.items.filter(i => state.discovered[i.id]).length, total: zone.items.length})} · <span style={{ color: zone.accent }}>{t(S.stillOutThere, {n: zone.items.length - zone.items.filter(i => state.discovered[i.id]).length})}</span>
           </div>
         </div>
       </div>
       <div style={{ margin: "10px 16px 14px", background: BLUE.pale, border: `1.5px dashed ${BLUE.light}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid }}>
-        <Search size={18} color={BLUE.mid} style={{ flexShrink: 0 }} /><span>Spot something? Tap its card to learn more, then stamp <strong>"I Found It!"</strong></span>
+        <Search size={18} color={BLUE.mid} style={{ flexShrink: 0 }} /><span>{S.spotSomething} <strong>"{S.iFoundIt}"</strong></span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14, padding: "0 16px" }}>
         {displayItems.map(item => <ItemCard key={item.id} item={item} zone={zone} onTap={() => setOpenItem(item)} />)}
@@ -1182,8 +1448,8 @@ function FieldGuideTab() {
       {zone.items.every(i => state.discovered[i.id]) && (
         <div style={{ margin: "20px 16px 0", background: `linear-gradient(135deg,${zone.color},${zone.accent})`, borderRadius: 20, padding: "20px 24px", textAlign: "center", boxShadow: `0 10px 30px ${zone.accent}45` }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}><Trophy size={40} color="white" /></div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22 }}>Zone Complete!</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.9)", fontSize: 15, marginTop: 6 }}>Amazing! You found every {zone.label.toLowerCase()}!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22 }}>{S.zoneComplete}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.9)", fontSize: 15, marginTop: 6 }}>{t(S.zoneCompleteDesc, {zone: zone.label.toLowerCase()})}</div>
         </div>
       )}
       {openItem && openZone && <DetailSheet item={openItem} zone={openZone} onClose={() => setOpenItem(null)} />}
@@ -1196,6 +1462,7 @@ function FieldGuideTab() {
 // ╚══════════════════════════════════════════════════════════════╝
 function MissionsTab() {
   const { state } = useApp();
+  const { S } = useLang();
   const { discovered, earnedBadges } = state;
   const pack = PACKS[state.selectedPack];
   const totalFound = Object.values(discovered).filter(Boolean).length;
@@ -1207,14 +1474,14 @@ function MissionsTab() {
       <div style={{ margin: "16px 16px 8px", background: `linear-gradient(135deg,${rank.color},${rank.color}CC)`, borderRadius: 24, padding: "20px 22px", display: "flex", alignItems: "center", gap: 16, boxShadow: `0 8px 28px ${rank.color}40` }}>
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "3px solid rgba(255,255,255,0.4)" }}><Award size={34} color="white" /></div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 12, letterSpacing: 1 }}>CURRENT RANK</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 12, letterSpacing: 1 }}>{S.currentRank}</div>
           <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 24, letterSpacing: 1, lineHeight: 1.1 }}>{rank.label}</div>
           <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 2 }}>{totalFound} of {pack.zones.flatMap(z => z.items).length} · {earned.length} of {pack.badges.length} badges</div>
         </div>
       </div>
       {active.length > 0 && (
         <div style={{ padding: "16px 16px 0" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 18, letterSpacing: 1, marginBottom: 10 }}>Active Missions</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 18, letterSpacing: 1, marginBottom: 10 }}>{S.activeMissions}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {active.map(badge => {
               const { cur, max } = badge.progress(discovered, pack.zones);
@@ -1232,7 +1499,7 @@ function MissionsTab() {
                   <div style={{ background: `${badge.accent}18`, borderRadius: 20, height: 12, overflow: "hidden", marginBottom: 10, border: `1px solid ${badge.accent}30` }}>
                     <div style={{ height: "100%", borderRadius: 20, background: `linear-gradient(90deg,${badge.accent},${badge.color})`, width: `${(cur / max) * 100}%`, transition: "width 0.6s ease", minWidth: cur > 0 ? 12 : 0 }} />
                   </div>
-                  {cur < max && hint && <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Search size={13} color={badge.color} /><span style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: badge.color }}>Look for: <strong>{hint}</strong></span></div>}
+                  {cur < max && hint && <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Search size={13} color={badge.color} /><span style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: badge.color }}>{S.lookFor} <strong>{hint}</strong></span></div>}
                 </div>
               );
             })}
@@ -1241,11 +1508,11 @@ function MissionsTab() {
       )}
       {earned.length > 0 && (
         <div style={{ padding: "20px 16px 0" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.goldDark, fontSize: 18, letterSpacing: 1, marginBottom: 10 }}>Trophy Shelf</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.goldDark, fontSize: 18, letterSpacing: 1, marginBottom: 10 }}>{S.trophyShelf}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
             {earned.map(badge => (
               <div key={badge.id} style={{ background: `linear-gradient(145deg,${badge.accent}18,white)`, borderRadius: 20, border: `3px solid ${badge.accent}`, padding: "18px 14px", textAlign: "center", boxShadow: `0 6px 20px ${badge.accent}30`, position: "relative" }}>
-                <div style={{ position: "absolute", top: -10, right: 12, background: `linear-gradient(90deg,${BLUE.gold},${BLUE.goldDark})`, borderRadius: 20, padding: "2px 10px", fontFamily: "'Luckiest Guy',cursive", fontSize: 9, color: "white", letterSpacing: 1 }}>EARNED!</div>
+                <div style={{ position: "absolute", top: -10, right: 12, background: `linear-gradient(90deg,${BLUE.gold},${BLUE.goldDark})`, borderRadius: 20, padding: "2px 10px", fontFamily: "'Luckiest Guy',cursive", fontSize: 9, color: "white", letterSpacing: 1 }}>{S.earned}</div>
                 <div style={{ fontSize: 44, marginBottom: 6 }}>{badge.emoji}</div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 14, color: badge.color, letterSpacing: 0.5, lineHeight: 1.2 }}>{badge.name}</div>
               </div>
@@ -1262,6 +1529,7 @@ function MissionsTab() {
 // ╚══════════════════════════════════════════════════════════════╝
 function SpellingGame({ item, onClose }) {
   const { dispatch } = useApp();
+  const { S } = useLang();
   const { speakWord, speakCorrect, speakTryAgain } = useAudio();
   const pack = PACKS["montana"];
   const choices = useMemo(() => shuffle([item, ...getDecoys(item, pack)]), [item.id]);
@@ -1282,12 +1550,12 @@ function SpellingGame({ item, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: `linear-gradient(160deg,${BLUE.deepest},${BLUE.dark} 60%,${BLUE.mid})`, display: "flex", flexDirection: "column", animation: "fadeIn 0.25s ease", maxWidth: 600, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
         <button onClick={onClose} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="white" /></button>
-        <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 18, letterSpacing: 2 }}>WORD SPOTTER</div>
+        <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 18, letterSpacing: 2 }}>{S.wordSpotter}</div>
         <button onClick={() => speakWord(item.letters)} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Repeat2 size={18} color="white" /></button>
       </div>
       <div style={{ textAlign: "center", padding: "8px 20px 16px" }}>
-        {phase === "question" && (<><div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 26, letterSpacing: 1 }}>Which one is the</div><div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 36, letterSpacing: 2, textShadow: `0 0 20px ${BLUE.gold}80` }}>{item.letters}?</div><div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 15, marginTop: 4 }}>Tap the right picture!</div></>)}
-        {phase === "correct" && <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 28, animation: "popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)" }}>You got it! Now let's spell it!</div>}
+        {phase === "question" && (<><div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 26, letterSpacing: 1 }}>{S.whichOneIs}</div><div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 36, letterSpacing: 2, textShadow: `0 0 20px ${BLUE.gold}80` }}>{item.letters}?</div><div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 15, marginTop: 4 }}>Tap the right picture!</div></>)}
+        {phase === "correct" && <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 28, animation: "popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)" }}>{S.youGotItSpell}</div>}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, padding: "0 16px", flex: 1, alignContent: "center" }}>
         {choices.map(choice => {
@@ -1308,7 +1576,7 @@ function SpellingGame({ item, onClose }) {
           <button onClick={handleDone} style={{ background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, color: BLUE.deepest, border: "none", borderRadius: 20, padding: "14px 40px", cursor: "pointer", fontFamily: "'Luckiest Guy',cursive", fontSize: 20, letterSpacing: 1, boxShadow: `0 6px 0 ${BLUE.goldDark}`, animation: "popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)" }}
             onPointerDown={e => e.currentTarget.style.transform = "translateY(5px)"}
             onPointerUp={e => e.currentTarget.style.transform = "translateY(0)"}
-          >Awesome! ⭐</button>
+          >{S.awesome}</button>
         )}
       </div>
     </div>
@@ -1317,6 +1585,7 @@ function SpellingGame({ item, onClose }) {
 
 function SpellingTab() {
   const { state } = useApp();
+  const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
   const [activeGame, setActiveGame] = useState(null);
@@ -1332,8 +1601,8 @@ function SpellingTab() {
       <div style={{ margin: "16px 16px 12px", background: `linear-gradient(135deg,${BLUE.dark},${BLUE.mid})`, borderRadius: 24, padding: "18px 22px", display: "flex", alignItems: "center", gap: 16, boxShadow: `0 8px 28px ${BLUE.dark}40` }}>
         <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}><BookOpen size={30} color={BLUE.gold} /></div>
         <div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 20, letterSpacing: 1 }}>Word Spotter</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14 }}>{allItems.length + pack.bonusWords.length} words · tap any to play!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 20, letterSpacing: 1 }}>{S.wordSpotter}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14 }}>{t(S.wordsToLearn, {n: allItems.length + pack.bonusWords.length})}</div>
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
@@ -1405,6 +1674,7 @@ function makeChoices(answer) {
 function MathTab() {
   const { state, dispatch } = useApp();
   const audio = useAudio();
+  const { S } = useLang();
   const { mathStats, discovered } = state;
   const totalCorrect = mathStats.total || 0;
   const streak = mathStats.streak || 0;
@@ -1431,7 +1701,7 @@ function MathTab() {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(170deg,#FEF9EC,#FFF8E1 50%,white)", paddingBottom: 110 }}>
       <div style={{ display: "flex", gap: 10, padding: "14px 16px 10px" }}>
-        {[{ label: "correct", value: totalCorrect, bg: "white", color: BLUE.dark, border: BLUE.light }, { label: streak >= 3 ? `${streak} streak!` : "streak", value: streak >= 3 ? "🔥" : streak, bg: streak >= 3 ? "linear-gradient(135deg,#FF6B35,#E84A1E)" : "white", color: streak >= 3 ? "white" : BLUE.dark, border: streak >= 3 ? "transparent" : BLUE.light }, { label: mathStars > 0 ? "math stars" : `${nextStarIn} to ⭐`, value: mathStars > 0 ? `⭐×${mathStars}` : "0", bg: mathStars > 0 ? `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})` : "white", color: mathStars > 0 ? "white" : BLUE.dark, border: mathStars > 0 ? "transparent" : BLUE.light }].map((s, i) => (
+        {[{ label: S.correct, value: totalCorrect, bg: "white", color: BLUE.dark, border: BLUE.light }, { label: streak >= 3 ? `${streak} ${S.streak}!` : S.streak, value: streak >= 3 ? "🔥" : streak, bg: streak >= 3 ? "linear-gradient(135deg,#FF6B35,#E84A1E)" : "white", color: streak >= 3 ? "white" : BLUE.dark, border: streak >= 3 ? "transparent" : BLUE.light }, { label: mathStars > 0 ? S.mathStars : t(S.toStar, {n: nextStarIn}), value: mathStars > 0 ? `⭐×${mathStars}` : "0", bg: mathStars > 0 ? `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})` : "white", color: mathStars > 0 ? "white" : BLUE.dark, border: mathStars > 0 ? "transparent" : BLUE.light }].map((s, i) => (
           <div key={i} style={{ flex: 1, background: s.bg, borderRadius: 16, padding: "10px 14px", textAlign: "center", border: `2px solid ${s.border}`, boxShadow: "0 2px 10px rgba(13,45,79,0.07)" }}>
             <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 22, lineHeight: 1, color: s.color }}>{s.value}</div>
             <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 11, color: typeof s.bg === "string" && s.bg !== "white" ? "rgba(255,255,255,0.85)" : BLUE.mid }}>{s.label}</div>
@@ -1439,7 +1709,7 @@ function MathTab() {
         ))}
       </div>
       <div style={{ display: "flex", gap: 8, padding: "0 16px 16px" }}>
-        {[{ id: "count", label: "Count It!", at: 0 }, { id: "add", label: "Add It Up!", at: 5 }, { id: "subtract", label: "Take Away!", at: 10 }].map(m => {
+        {[{ id: "count", label: S.countIt, at: 0 }, { id: "add", label: S.addItUp, at: 5 }, { id: "subtract", label: S.takeAway, at: 10 }].map(m => {
           const unlocked = modesUnlocked.includes(m.id); const active = mode === m.id;
           return (
             <button key={m.id} onClick={() => unlocked && handleModeSwitch(m.id)} style={{ flex: 1, padding: "10px 6px", background: active ? `linear-gradient(135deg,${BLUE.dark},${BLUE.mid})` : unlocked ? "white" : "#F0F5FA", border: active ? "none" : `2px solid ${unlocked ? BLUE.light : "#E0EAF2"}`, borderRadius: 16, cursor: unlocked ? "pointer" : "default", transition: "all 0.2s", boxShadow: active ? `0 4px 14px ${BLUE.dark}40` : "none", opacity: unlocked ? 1 : 0.55 }}>
@@ -1454,7 +1724,7 @@ function MathTab() {
         <div style={{ textAlign: "center", minHeight: 44, position: "relative", width: "100%" }}>
           <button onClick={() => audio.speakMathPrompt(problem)} style={{ position: "absolute", top: 0, right: 0, width: 38, height: 38, borderRadius: "50%", background: BLUE.pale, border: `2px solid ${BLUE.light}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Volume2 size={18} color={BLUE.mid} /></button>
           {phase === "correct" && <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 26, color: "#2ECC71", animation: "popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)" }}>{PRAISE[praiseIdx]}</div>}
-          {phase === "question" && <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: BLUE.dark, paddingRight: 44 }}>{mode === "count" ? "How many do you see? 👀" : mode === "add" ? "Add them together! ➕" : "How many are left? 🤔"}</div>}
+          {phase === "question" && <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: BLUE.dark, paddingRight: 44 }}>{mode === "count" ? S.howManyDoYouSee : mode === "add" ? S.addThem : S.howManyLeft}</div>}
         </div>
         {mode === "count" && <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", padding: "8px 0" }}>{problem.display.map((e, i) => <div key={i} style={{ fontSize: 48, lineHeight: 1, animation: bouncing ? `emojiPop 0.4s ${i * 0.06}s both` : "none" }}>{e}</div>)}</div>}
         {mode === "add" && (
@@ -1489,6 +1759,7 @@ function MathTab() {
 // ╚══════════════════════════════════════════════════════════════╝
 function MontanaMap() {
   const { state } = useApp();
+  const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
   const foundItems = allItems.filter(i => state.discovered[i.id]);
@@ -1511,7 +1782,7 @@ function MontanaMap() {
         {foundItems.length > 12 && <text x="370" y="160" fontFamily="Luckiest Guy,cursive" fontSize="11" fill={BLUE.gold} textAnchor="middle">+{foundItems.length - 12}</text>}
       </svg>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-        <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 13 }}>{foundItems.length} of {allItems.length} things found!</div>
+        <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 13 }}>{t(S.foundOnMap, {found: foundItems.length, total: allItems.length})}</div>
         <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 14 }}>{Math.round(pct * 100)}%</div>
       </div>
       <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 20, height: 8, marginTop: 8, overflow: "hidden" }}>
@@ -1524,6 +1795,7 @@ function MontanaMap() {
 
 function JournalTab() {
   const { state } = useApp();
+  const { S } = useLang();
   const { discovered, discoveryLog, earnedBadges, mathStats, spellingStars } = state;
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
@@ -1544,7 +1816,7 @@ function JournalTab() {
   return (
     <div style={{ paddingBottom: 110 }}>
       <div style={{ display: "flex", margin: "14px 16px 12px", background: BLUE.pale, borderRadius: 20, padding: 4, gap: 0 }}>
-        {[{ id: "stats", label: "My Stats", Icon: Star }, { id: "map", label: "Map", Icon: MapPin }, { id: "timeline", label: "Timeline", Icon: BookMarked }].map(v => (
+        {[{ id: "stats", label: S.myStats, Icon: Star }, { id: "map", label: S.map, Icon: MapPin }, { id: "timeline", label: S.timeline, Icon: BookMarked }].map(v => (
           <button key={v.id} onClick={() => setView(v.id)} style={{ flex: 1, padding: "10px 4px", background: view === v.id ? `linear-gradient(135deg,${BLUE.dark},${BLUE.mid})` : "transparent", border: "none", borderRadius: 16, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
             <v.Icon size={18} color={view === v.id ? "white" : BLUE.mid} strokeWidth={view === v.id ? 2.5 : 1.8} />
             <span style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 10, letterSpacing: 0.5, color: view === v.id ? "white" : BLUE.mid }}>{v.label}</span>
@@ -1556,17 +1828,17 @@ function JournalTab() {
           <div style={{ background: `linear-gradient(135deg,${rank.color},${rank.color}CC)`, borderRadius: 24, padding: "22px 22px", display: "flex", alignItems: "center", gap: 16, boxShadow: `0 8px 28px ${rank.color}50` }}>
             <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "3px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Award size={38} color="white" /></div>
             <div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 12, letterSpacing: 1 }}>{name.toUpperCase()} IS A</div>
+              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 12, letterSpacing: 1 }}>{t(S.isA, {name: name.toUpperCase()})}</div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 28, letterSpacing: 1, lineHeight: 1.1 }}>{rank.label}!</div>
-              {tripDay && <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 4 }}>Day {tripDay} of your Montana adventure</div>}
+              {tripDay && <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 4 }}>{t(S.dayOfAdventure, {n: tripDay})}</div>}
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
-              { Ic: Search, label: "Things Found", value: totalFound, max: allItems.length, color: BLUE.mid },
-              { Ic: Trophy, label: "Badges Earned", value: totalBadges, max: pack.badges.length, color: BLUE.goldDark },
-              { Ic: Calculator, label: "Math Correct", value: totalMath, max: null, color: "#E67E22" },
-              { Ic: BookOpen, label: "Words Practiced", value: totalSpelling, max: null, color: "#9B59B6" },
+              { Ic: Search, label: S.thingsFound, value: totalFound, max: allItems.length, color: BLUE.mid },
+              { Ic: Trophy, label: S.badgesEarned, value: totalBadges, max: pack.badges.length, color: BLUE.goldDark },
+              { Ic: Calculator, label: S.mathCorrect, value: totalMath, max: null, color: "#E67E22" },
+              { Ic: BookOpen, label: S.wordsPracticed, value: totalSpelling, max: null, color: "#9B59B6" },
             ].map(s => (
               <div key={s.label} style={{ background: "white", borderRadius: 20, padding: "16px 14px", border: `2px solid ${s.color}25`, boxShadow: `0 4px 16px ${s.color}15` }}>
                 <div style={{ marginBottom: 6 }}><s.Ic size={26} color={s.color} strokeWidth={1.8} /></div>
@@ -1579,7 +1851,7 @@ function JournalTab() {
 
           {/* Export button */}
           <button onClick={() => setShowExport(true)} style={{ width: "100%", background: `linear-gradient(135deg,${BLUE.dark},${BLUE.mid})`, color: "white", border: "none", borderRadius: 18, padding: "16px", fontFamily: "'Luckiest Guy',cursive", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: `0 6px 0 ${BLUE.dark}` }}>
-            <Share2 size={20} color="white" /> My Adventure Report
+            <Share2 size={20} color="white" /> {S.myAdventureReport}
           </button>
 
           {(() => { const nextRank = RANKS.find(r => r.min > totalFound); if (!nextRank) return null; const needed = nextRank.min - totalFound; return (<div style={{ background: BLUE.pale, borderRadius: 18, padding: "14px 18px", border: `2px dashed ${BLUE.light}`, display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 30 }}>{nextRank.emoji}</span><div><div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 15 }}>Almost {nextRank.label}!</div><div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.mid, fontSize: 13 }}>Find {needed} more thing{needed > 1 ? "s" : ""} to level up!</div></div></div>); })()}
@@ -1587,7 +1859,7 @@ function JournalTab() {
       )}
       {view === "map" && (
         <div>
-          <div style={{ padding: "0 16px 14px", fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, textAlign: "center" }}>Every time you find something, it lights up on the map! ✨</div>
+          <div style={{ padding: "0 16px 14px", fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, textAlign: "center" }}>{S.everyTimeYouFind}</div>
           <MontanaMap />
           <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 8 }}>
             {pack.zones.map(z => {
@@ -1613,8 +1885,8 @@ function JournalTab() {
           {dayGroups.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 24px", background: BLUE.pale, borderRadius: 20, border: `2px dashed ${BLUE.light}`, marginTop: 8 }}>
               <div style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}><BookMarked size={48} color={BLUE.light} /></div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, marginBottom: 8 }}>Your journal is empty!</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.mid, fontSize: 15, lineHeight: 1.5 }}>Head to the Field Guide and start finding things!</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, marginBottom: 8 }}>{S.journalEmpty}</div>
+              <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.mid, fontSize: 15, lineHeight: 1.5 }}>{S.journalEmptyDesc}</div>
             </div>
           ) : dayGroups.map(([dateStr, entries]) => (
             <div key={dateStr} style={{ marginBottom: 24 }}>
@@ -1657,6 +1929,7 @@ function JournalTab() {
 // ╚══════════════════════════════════════════════════════════════╝
 function HomeScreen() {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const { discovered, earnedBadges, discoveryLog } = state;
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
@@ -1665,17 +1938,17 @@ function HomeScreen() {
   const tripDay = discoveryLog.length > 0 ? Math.floor((Date.now() - discoveryLog[0].ts) / 86400000) + 1 : null;
   const name = state.userName || "Ranger";
   const quickTabs = [
-    { id: "guide",    label: "Field Guide", Ic: Search,    color: BLUE.dark,     desc: "Find & discover!" },
-    { id: "spelling", label: "Spelling",    Ic: BookOpen,  color: "#7B3FA0",     desc: "Spell words!" },
-    { id: "math",     label: "Math",        Ic: Calculator,color: "#E67E22",     desc: "Count & add!" },
-    { id: "missions", label: "Missions",    Ic: Trophy,    color: BLUE.goldDark, desc: "Check badges!" },
-    { id: "journal",  label: "Journal",     Ic: BookMarked,color: "#1A6E8F",     desc: "My adventure!" },
+    { id: "guide",    label: S.guide,    Ic: Search,    color: BLUE.dark,     desc: state.lang === "es" ? "¡Encuentra y descubre!" : "Find & discover!" },
+    { id: "spelling", label: S.spelling, Ic: BookOpen,  color: "#7B3FA0",     desc: state.lang === "es" ? "¡Practica palabras!" : "Spell words!" },
+    { id: "math",     label: S.math,     Ic: Calculator,color: "#E67E22",     desc: state.lang === "es" ? "¡Cuenta y suma!" : "Count & add!" },
+    { id: "missions", label: S.missions, Ic: Trophy,    color: BLUE.goldDark, desc: state.lang === "es" ? "¡Ver insignias!" : "Check badges!" },
+    { id: "journal",  label: S.journal,  Ic: BookMarked,color: "#1A6E8F",     desc: state.lang === "es" ? "¡Mi aventura!" : "My adventure!" },
   ];
   return (
     <div style={{ paddingBottom: 110 }}>
       {/* Welcome hero */}
       <div style={{ margin: "16px 16px 12px", background: `linear-gradient(135deg,${rank.color},${rank.color}BB)`, borderRadius: 24, padding: "24px 22px", boxShadow: `0 8px 28px ${rank.color}40` }}>
-        <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14, letterSpacing: 1 }}>{tripDay ? `DAY ${tripDay} OF YOUR ADVENTURE` : "WELCOME BACK,"}</div>
+        <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14, letterSpacing: 1 }}>{tripDay ? t(S.dayOf, {n: tripDay}) : S.welcomeBack}</div>
         <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 32, letterSpacing: 2, lineHeight: 1.1, marginTop: 2 }}>{name.toUpperCase()}!</div>
         <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 6 }}>{totalFound === 0 ? "Tap Field Guide to start exploring Montana!" : `${totalFound} of ${allItems.length} things found · ${Object.values(earnedBadges).filter(Boolean).length} badges earned`}</div>
         <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, height: 10, marginTop: 12, overflow: "hidden" }}>
@@ -1688,7 +1961,7 @@ function HomeScreen() {
 
       {/* Quick-launch grid */}
       <div style={{ padding: "4px 16px 0" }}>
-        <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>Where to next?</div>
+        <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>{S.whereNext}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
           {quickTabs.map(t => (
             <div key={t.id} onClick={() => dispatch({ type: "SET_TAB", tab: t.id })}
@@ -1707,8 +1980,8 @@ function HomeScreen() {
           <div style={{ background: "#F8F4FF", borderRadius: 20, padding: "18px 16px", border: "2px dashed #C8B8E8", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
             <div style={{ width: 48, height: 48, borderRadius: 14, background: "#EDE8F8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Compass size={24} color="#7B3FA0" strokeWidth={1.8} /></div>
             <div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 14, color: "#7B3FA0" }}>Airport Hunt</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 12, color: "#A090B8" }}>Coming soon!</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 14, color: "#7B3FA0" }}>{S.airportHunt}</div>
+              <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 12, color: "#A090B8" }}>{S.comingSoon}</div>
             </div>
           </div>
         </div>
@@ -1717,7 +1990,7 @@ function HomeScreen() {
       {/* Recent finds */}
       {discoveryLog.length > 0 && (
         <div style={{ padding: "16px 16px 0" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>Recent Finds</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>{S.recentFinds}</div>
           <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
             {[...discoveryLog].reverse().slice(0, 8).map((entry, i) => {
               const item = allItems.find(it => it.id === entry.itemId); if (!item) return null;
@@ -1880,6 +2153,7 @@ function FlagCard({ item, size = 90, isState = false, selected = false, correct 
 // ╚══════════════════════════════════════════════════════════════╝
 function FlagGame({ mode, onBack }) {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const { speakPhrase, speakCorrect, speakTryAgain, muted } = useAudio();
   const items = mode === "us" ? US_STATES : WORLD_COUNTRIES;
   const gameId = mode === "us" ? "flagsUs" : "flagsWorld";
@@ -1938,8 +2212,8 @@ function FlagGame({ mode, onBack }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
         <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="white" /></button>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 2 }}>{mode === "us" ? "🇺🇸 US STATES" : "🌍 WORLD FLAGS"}</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 12 }}>{totalDone} of {items.length} learned</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 2 }}>{mode === "us" ? `🇺🇸 ${S.usStates.toUpperCase()}` : `🌍 ${S.worldFlags.toUpperCase()}`}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 12 }}>{totalDone} {S.ofLearned.replace("{n}", items.length)}</div>
         </div>
         <button onClick={() => speakPhrase(mode === "us" ? `${current.name}. In Spanish: ${current.es}` : `${current.name}. En español: ${current.es}`, { pitch: 1.1 })} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Repeat2 size={18} color="white" /></button>
       </div>
@@ -1953,11 +2227,11 @@ function FlagGame({ mode, onBack }) {
       <div style={{ textAlign: "center", padding: "0 20px 20px" }}>
         {phase === "flag" && (
           <>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22, marginBottom: 16 }}>Which flag is this?</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22, marginBottom: 16 }}>{S.whichFlagIs}</div>
             <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 96, lineHeight: 1, background: "rgba(255,255,255,0.1)", borderRadius: 24, padding: "20px 32px", border: "3px solid rgba(255,255,255,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
               {current.flag}
             </div>
-            <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 15, marginTop: 12 }}>Tap the right name!</div>
+            <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 15, marginTop: 12 }}>{S.tapRightName}</div>
           </>
         )}
 
@@ -1966,8 +2240,8 @@ function FlagGame({ mode, onBack }) {
             <div style={{ fontSize: 72, marginBottom: 8 }}>{current.flag}</div>
             <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 28, letterSpacing: 1 }}>{current.name}</div>
             <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22, marginTop: 4 }}>{current.es}</div>
-            {mode === "world" && <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 14, marginTop: 8 }}>Capital: {current.capital} · {current.capitalEs}</div>}
-            {mode === "us" && <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 14, marginTop: 8 }}>Abbreviation: {current.abbr}</div>}
+            {mode === "world" && <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 14, marginTop: 8 }}>{S.capital} {current.capital} · {current.capitalEs}</div>}
+            {mode === "us" && <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 14, marginTop: 8 }}>{S.abbreviation} {current.abbr}</div>}
           </div>
         )}
 
@@ -2005,15 +2279,15 @@ function FlagGame({ mode, onBack }) {
       {/* After correct: spell it or next */}
       {phase === "name" && (
         <div style={{ padding: "0 20px", display: "flex", gap: 10 }}>
-          <button onClick={startSpell} style={{ flex: 2, padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: BLUE.deepest, cursor: "pointer", boxShadow: `0 5px 0 ${BLUE.goldDark}` }}>Spell It! ✏️</button>
-          <button onClick={handleNext} style={{ flex: 1, padding: "16px", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: "white", cursor: "pointer" }}>Next →</button>
+          <button onClick={startSpell} style={{ flex: 2, padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 18, color: BLUE.deepest, cursor: "pointer", boxShadow: `0 5px 0 ${BLUE.goldDark}` }}>{S.spellItBtn}</button>
+          <button onClick={handleNext} style={{ flex: 1, padding: "16px", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: "white", cursor: "pointer" }}>{S.nextArrow}</button>
         </div>
       )}
 
       {phase === "spell" && revealIdx >= letters.length - 1 && (
         <div style={{ padding: "16px 20px" }}>
           <button onClick={handleNext} style={{ width: "100%", padding: "18px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 20, color: BLUE.deepest, cursor: "pointer", boxShadow: `0 5px 0 ${BLUE.goldDark}`, animation: "popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)" }}>
-            Next Flag! 🌍
+            {S.nextFlag}
           </button>
         </div>
       )}
@@ -2026,6 +2300,7 @@ function FlagGame({ mode, onBack }) {
 // ╚══════════════════════════════════════════════════════════════╝
 function FoodsGame({ mode, onBack }) {
   const { state, dispatch } = useApp();
+  const { S } = useLang();
   const { speakPhrase, speakCorrect, speakTryAgain } = useAudio();
   const gameId = mode === "spot" ? "foodsSpot" : "foodsMatch";
   const progress = state.gamesProgress[gameId] || {};
@@ -2092,8 +2367,8 @@ function FoodsGame({ mode, onBack }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
         <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="white" /></button>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 2 }}>{mode === "spot" ? "🍽️ SPOT THE FOOD" : "🗺️ MATCH THE FOOD"}</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,200,100,0.8)", fontSize: 12 }}>{totalDone} of {WORLD_FOODS.length} tasted</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 16, letterSpacing: 2 }}>{mode === "spot" ? `🍽️ ${S.spotFood.toUpperCase()}` : `🗺️ ${S.matchFood.toUpperCase()}`}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,200,100,0.8)", fontSize: 12 }}>{totalDone} {S.ofTasted.replace("{n}", WORLD_FOODS.length)}</div>
         </div>
         <button onClick={() => speakPhrase(`${current.name}. ${current.es}`, { pitch: 1.1 })} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Repeat2 size={18} color="white" /></button>
       </div>
@@ -2109,10 +2384,10 @@ function FoodsGame({ mode, onBack }) {
           {phase === "question" && (
             <>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 20, marginBottom: 4 }}>Which one is the</div>
+                <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 20, marginBottom: 4 }}>{S.whichOneIsFood}</div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 30, letterSpacing: 1 }}>{current.name}</div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "rgba(255,200,100,0.9)", fontSize: 20 }}>{current.es}</div>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 4 }}>from {countryForFood.flag} {countryForFood.name}</div>
+                <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 4 }}>{S.fromCountry} {countryForFood.flag} {countryForFood.name}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
                 {foodChoices.map(food => {
@@ -2136,7 +2411,7 @@ function FoodsGame({ mode, onBack }) {
           {phase === "correct" && (
             <div style={{ textAlign: "center", animation: "popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)" }}>
               <div style={{ fontSize: 80, marginBottom: 8 }}>{current.emoji}</div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 26, marginBottom: 4 }}>You got it!</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 26, marginBottom: 4 }}>{S.youGotItFood}</div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22 }}>{current.name}</div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 18, marginBottom: 12 }}>{current.es}</div>
               <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "14px 16px", marginBottom: 16, display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -2146,13 +2421,13 @@ function FoodsGame({ mode, onBack }) {
                   <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,200,100,0.85)", fontSize: 13, lineHeight: 1.4, marginTop: 6 }}>{current.factEs}</div>
                 </div>
               </div>
-              <button onClick={handleNext} style={{ width: "100%", padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 20, color: BLUE.deepest, cursor: "pointer" }}>Next Food! 🍽️</button>
+              <button onClick={handleNext} style={{ width: "100%", padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 20, color: BLUE.deepest, cursor: "pointer" }}>{S.nextFood}</button>
             </div>
           )}
         </div>
       )}
 
-      {/* MATCH MODE */}
+      {/* MATCH MODE */
       {mode === "match" && (
         <div style={{ padding: "0 20px", flex: 1 }}>
           {phase === "question" && (
@@ -2161,8 +2436,7 @@ function FoodsGame({ mode, onBack }) {
                 <div style={{ fontSize: 80, lineHeight: 1, marginBottom: 8 }}>{current.emoji}</div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 26 }}>{current.name}</div>
                 <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 20, marginBottom: 6 }}>{current.es}</div>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.7)", fontSize: 15 }}>Which country is this food from?</div>
-                <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,200,100,0.7)", fontSize: 14 }}>¿De qué país viene esta comida?</div>
+                <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.7)", fontSize: 15 }}>{S.whichCountry}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {countryChoices.map(country => {
@@ -2192,8 +2466,8 @@ function FoodsGame({ mode, onBack }) {
                 <span style={{ fontSize: 40, color: "white", fontFamily: "'Luckiest Guy',cursive" }}>+</span>
                 <span style={{ fontSize: 64 }}>{countryForFood.flag}</span>
               </div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 24, marginBottom: 4 }}>Correct!</div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 20 }}>{current.name} is from</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "#7AE8A0", fontSize: 24, marginBottom: 4 }}>{S.correctBang}</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 20 }}>{t(S.isFrom, {food: current.name})}</div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22 }}>{countryForFood.name} · {countryForFood.es}</div>
               <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "14px 16px", margin: "14px 0", display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <Lightbulb size={22} color={BLUE.gold} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -2202,7 +2476,7 @@ function FoodsGame({ mode, onBack }) {
                   <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,200,100,0.85)", fontSize: 13, lineHeight: 1.4, marginTop: 6 }}>{current.factEs}</div>
                 </div>
               </div>
-              <button onClick={handleNext} style={{ width: "100%", padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 20, color: BLUE.deepest, cursor: "pointer" }}>Next Food! 🍽️</button>
+              <button onClick={handleNext} style={{ width: "100%", padding: "16px", background: `linear-gradient(135deg,${BLUE.gold},${BLUE.goldDark})`, border: "none", borderRadius: 18, fontFamily: "'Luckiest Guy',cursive", fontSize: 20, color: BLUE.deepest, cursor: "pointer" }}>{S.nextFood}</button>
             </div>
           )}
         </div>
@@ -2216,6 +2490,7 @@ function FoodsGame({ mode, onBack }) {
 // ╚══════════════════════════════════════════════════════════════╝
 function GamesTab() {
   const { state } = useApp();
+  const { S } = useLang();
   const [activeGame, setActiveGame] = useState(null); // { type, mode }
   const gp = state.gamesProgress || {};
 
@@ -2230,37 +2505,37 @@ function GamesTab() {
   const gameCards = [
     {
       type: "flags", mode: "us",
-      title: "US States",   titleEs: "Estados de EE.UU.",
+      title: S.usStates,   titleEs: S.usStatesEs,
       icon: "🇺🇸",
-      desc: "Learn all 50 state flags!",
-      descEs: "¡Aprende las 50 banderas!",
+      desc: S.learnAllStates,
+      descEs: S.learnAllStatesEs,
       done: flagsUsDone, total: 50,
       color: BLUE.dark, accent: BLUE.bright, bg: BLUE.sky,
     },
     {
       type: "flags", mode: "world",
-      title: "World Flags", titleEs: "Banderas del Mundo",
+      title: S.worldFlags, titleEs: S.worldFlagsEs,
       icon: "🌍",
-      desc: "Flags from every continent!",
-      descEs: "¡Banderas de todos los continentes!",
+      desc: S.flagsAllContinents,
+      descEs: S.flagsAllContinentsEs,
       done: flagsWorldDone, total: 30,
       color: "#2A6B4A", accent: "#3DBF7A", bg: "#EDFAF3",
     },
     {
       type: "foods", mode: "spot",
-      title: "Spot the Food", titleEs: "Identifica la Comida",
+      title: S.spotFood, titleEs: S.spotFoodEs,
       icon: "🍽️",
-      desc: "Find the right food from 3 choices!",
-      descEs: "¡Encuentra la comida correcta!",
+      desc: S.spotFoodDesc,
+      descEs: S.spotFoodDescEs,
       done: foodsSpotDone, total: WORLD_FOODS.length,
       color: "#8B4513", accent: "#D2691E", bg: "#FDF0E6",
     },
     {
       type: "foods", mode: "match",
-      title: "Match the Food", titleEs: "Une la Comida",
+      title: S.matchFood, titleEs: S.matchFoodEs,
       icon: "🗺️",
-      desc: "Match each food to its country!",
-      descEs: "¡Une cada comida con su país!",
+      desc: S.matchFoodDesc,
+      descEs: S.matchFoodDescEs,
       done: foodsMatchDone, total: WORLD_FOODS.length,
       color: "#7B3FA0", accent: "#B565D6", bg: "#F5EEF8",
     },
@@ -2274,8 +2549,8 @@ function GamesTab() {
           <Gamepad2 size={30} color={BLUE.gold} />
         </div>
         <div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22, letterSpacing: 1 }}>World Games</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14 }}>Juegos del Mundo · 4 games to explore!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 22, letterSpacing: 1 }}>{S.worldGames}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.85)", fontSize: 14 }}>{S.juegosDelMundo}</div>
         </div>
       </div>
 
@@ -2314,9 +2589,9 @@ function GamesTab() {
       <div style={{ margin: "16px 16px 0", background: `linear-gradient(135deg,${BLUE.gold}15,${BLUE.gold}30)`, borderRadius: 18, padding: "14px 18px", border: `2px solid ${BLUE.gold}40`, display: "flex", gap: 12, alignItems: "flex-start" }}>
         <span style={{ fontSize: 28, flexShrink: 0 }}>🌎</span>
         <div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.goldDark, fontSize: 13, letterSpacing: 1, marginBottom: 4 }}>DID YOU KNOW?</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.dark, fontSize: 14, lineHeight: 1.5 }}>There are 195 countries in the world — each with its own flag, food, and language!</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#8B4513", fontSize: 13, lineHeight: 1.4, marginTop: 4 }}>¡Hay 195 países en el mundo, cada uno con su propia bandera, comida e idioma!</div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.goldDark, fontSize: 13, letterSpacing: 1, marginBottom: 4 }}>{S.didYouKnow}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.dark, fontSize: 14, lineHeight: 1.5 }}>{S.worldFact}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#8B4513", fontSize: 13, lineHeight: 1.4, marginTop: 4 }}>{S.worldFactEs}</div>
         </div>
       </div>
     </div>
@@ -2367,10 +2642,11 @@ function AppShell() {
             <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 44, lineHeight: 0.95, letterSpacing: 4, background: `linear-gradient(135deg,#FFFFFF 20%,${BLUE.gold} 60%,#FFD97D)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.35))" }}>
               {name.toUpperCase()}
             </div>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 14, letterSpacing: 3, textShadow: "1px 2px 0 rgba(0,0,0,0.25)", lineHeight: 1, marginTop: 2 }}>Montana Journal</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 14, letterSpacing: 3, textShadow: "1px 2px 0 rgba(0,0,0,0.25)", lineHeight: 1, marginTop: 2 }}>{shellS.subtitle}</div>
             <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 11, letterSpacing: 1, marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}><Award size={11} color={BLUE.light} />{rank.label}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <LangToggle />
             <MuteButton />
             <div style={{ background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.2)", borderRadius: 18, padding: "8px 14px", textAlign: "center" }}>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 26, lineHeight: 1 }}>{totalFound}</div>
