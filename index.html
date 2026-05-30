@@ -1,21 +1,212 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kids Travel App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Fonts preconnect first, then stylesheet — eliminates FOUT -->
+    <!-- ── Primary meta ──────────────────────────────────────── -->
+    <title>Gabi Aventuras</title>
+    <meta name="description" content="Explore Montana, learn to spell, play math games, and discover the world!" />
+    <meta name="application-name" content="Gabi Aventuras" />
+
+    <!-- ── PWA / theme ───────────────────────────────────────── -->
+    <meta name="theme-color" content="#0D2D4F" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── Apple PWA ─────────────────────────────────────────── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Aventuras" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- ── Favicon ───────────────────────────────────────────── -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- ── Fonts (preconnect first, then load) ───────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Patrick+Hand&display=swap"
       rel="stylesheet"
     />
+
+    <!-- ── Dynamic splash screen for every Apple device ─────── -->
+    <!--
+      Rather than shipping a dozen static PNG splash images,
+      we generate one at runtime via a <canvas> data-URL.
+      This covers every screen size — iPad mini, iPad, iPhone —
+      with zero static assets.
+    -->
+    <script>
+      (function () {
+        try {
+          // Only run on Apple devices that support standalone mode
+          const isApple =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          if (!isApple) return;
+
+          const W = window.screen.width * window.devicePixelRatio;
+          const H = window.screen.height * window.devicePixelRatio;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = W;
+          canvas.height = H;
+          const ctx = canvas.getContext("2d");
+
+          // Background gradient
+          const bg = ctx.createLinearGradient(0, 0, W, H);
+          bg.addColorStop(0, "#0D2D4F");
+          bg.addColorStop(0.55, "#1A4A7A");
+          bg.addColorStop(1, "#2272B6");
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, W, H);
+
+          // Stars scattered in background
+          ctx.fillStyle = "rgba(255,255,255,0.25)";
+          const starPositions = [
+            [0.12, 0.08], [0.87, 0.12], [0.35, 0.05], [0.65, 0.18],
+            [0.22, 0.22], [0.78, 0.07], [0.50, 0.15], [0.08, 0.35],
+            [0.92, 0.30], [0.42, 0.28], [0.18, 0.55], [0.82, 0.48],
+            [0.60, 0.72], [0.30, 0.82], [0.70, 0.88], [0.10, 0.90],
+          ];
+          starPositions.forEach(([sx, sy]) => {
+            ctx.beginPath();
+            ctx.arc(sx * W, sy * H, 2 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Mountain silhouette at bottom third
+          ctx.fillStyle = "rgba(168,212,245,0.12)";
+          ctx.beginPath();
+          ctx.moveTo(0, H);
+          ctx.lineTo(W * 0.15, H * 0.62);
+          ctx.lineTo(W * 0.28, H * 0.72);
+          ctx.lineTo(W * 0.45, H * 0.48);
+          ctx.lineTo(W * 0.58, H * 0.65);
+          ctx.lineTo(W * 0.72, H * 0.55);
+          ctx.lineTo(W * 0.88, H * 0.70);
+          ctx.lineTo(W, H * 0.60);
+          ctx.lineTo(W, H);
+          ctx.closePath();
+          ctx.fill();
+
+          // Gold accent bar at top (safe area aware)
+          const barH = H * 0.008;
+          const barGrad = ctx.createLinearGradient(0, 0, W, 0);
+          barGrad.addColorStop(0, "#F4B942");
+          barGrad.addColorStop(0.5, "#FFD97D");
+          barGrad.addColorStop(1, "#F4B942");
+          ctx.fillStyle = barGrad;
+          ctx.fillRect(0, 0, W, barH);
+
+          // "G" monogram — centered, large
+          const logoSize = Math.min(W, H) * 0.32;
+          const logoX = W / 2;
+          const logoY = H * 0.42;
+
+          // Circle background for logo
+          ctx.beginPath();
+          ctx.arc(logoX, logoY, logoSize * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(244,185,66,0.4)";
+          ctx.lineWidth = 3 * window.devicePixelRatio;
+          ctx.stroke();
+
+          // Shadow
+          ctx.font = `bold ${logoSize}px Arial Black, Arial`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "rgba(0,0,0,0.35)";
+          ctx.fillText("G", logoX + logoSize * 0.04, logoY + logoSize * 0.04);
+
+          // Gold gradient letter
+          const textGrad = ctx.createLinearGradient(
+            logoX - logoSize / 2, logoY - logoSize / 2,
+            logoX + logoSize / 2, logoY + logoSize / 2
+          );
+          textGrad.addColorStop(0, "#FFFFFF");
+          textGrad.addColorStop(0.45, "#F4B942");
+          textGrad.addColorStop(1, "#FFD97D");
+          ctx.fillStyle = textGrad;
+          ctx.fillText("G", logoX, logoY);
+
+          // App name below logo
+          const nameSize = Math.min(W, H) * 0.055;
+          ctx.font = `bold ${nameSize}px Arial Black, Arial`;
+          ctx.fillStyle = "rgba(255,255,255,0.90)";
+          ctx.fillText("GABI AVENTURAS", logoX, logoY + logoSize * 0.75);
+
+          // Tagline
+          const tagSize = nameSize * 0.6;
+          ctx.font = `${tagSize}px Arial`;
+          ctx.fillStyle = "rgba(168,212,245,0.80)";
+          ctx.fillText("Big Sky Country  ✦  Montana", logoX, logoY + logoSize * 0.75 + nameSize * 1.4);
+
+          // Inject as apple-touch-startup-image
+          const dataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("link");
+          link.rel = "apple-touch-startup-image";
+          link.href = dataUrl;
+          // media query covers the current screen dimensions
+          link.media = `(device-width: ${window.screen.width}px) and (device-height: ${window.screen.height}px) and (-webkit-device-pixel-ratio: ${window.devicePixelRatio})`;
+          document.head.appendChild(link);
+        } catch (e) {
+          // Splash generation is non-critical — fail silently
+        }
+      })();
+    </script>
+
+    <style>
+      /* Prevent overscroll bounce and address bar color on mobile */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #0D2D4F;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      /* Hide scrollbars globally (app is gesture-driven) */
+      ::-webkit-scrollbar { display: none; }
+      * { scrollbar-width: none; }
+    </style>
   </head>
+
   <body>
     <div id="root"></div>
+
+    <!-- ── Service Worker registration ───────────────────────── -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .then(function (reg) {
+              // Listen for updates — notify app if a new SW is waiting
+              reg.addEventListener("updatefound", function () {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener("statechange", function () {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    // A new version is available — dispatch event for the app to show banner
+                    window.dispatchEvent(new CustomEvent("swUpdateAvailable"));
+                  }
+                });
+              });
+            })
+            .catch(function (err) {
+              console.warn("SW registration failed:", err);
+            });
+        });
+      }
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
