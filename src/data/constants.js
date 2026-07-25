@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = 5;
-export const STORAGE_KEY    = "gabi_app_v5";
+export const SCHEMA_VERSION = 6;
+export const STORAGE_KEY    = "gabi_app_v6";
 
 export const BLUE = {
   deepest: "#0D2D4F", dark: "#1A4A7A", mid: "#2272B6",

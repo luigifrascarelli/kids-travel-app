@@ -1,11 +1,11 @@
 import { Award, Search } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE, getRank } from "../data/constants.js";
 import { PACKS } from "../data/packs/index.js";
 
 export function MissionsTab() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const { discovered, earnedBadges } = state;
   const pack = PACKS[state.selectedPack];

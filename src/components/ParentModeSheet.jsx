@@ -1,17 +1,42 @@
 import { useState } from "react";
-import { X, Settings, Trash2, Plus } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { X, Settings, Trash2, Plus, Users } from "lucide-react";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE } from "../data/constants.js";
 import { t } from "../data/strings.js";
 
 export function ParentModeSheet({ onClose }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const [confirmReset, setConfirmReset] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("⭐");
   const [addMode, setAddMode] = useState(false);
+  const [addProfileMode, setAddProfileMode] = useState(false);
+  const [newProfileName, setNewProfileName] = useState("");
+
+  const profileList = Object.values(state.profiles);
+
+  const handleAddProfile = () => {
+    if (!newProfileName.trim()) return;
+    dispatch({ type: "ADD_PROFILE", name: newProfileName.trim() });
+    setNewProfileName("");
+    setAddProfileMode(false);
+    onClose();
+  };
+
+  const handleSwitchProfile = (id) => {
+    dispatch({ type: "SWITCH_PROFILE", id });
+    onClose();
+  };
+
+  const handleRemoveProfile = (profile) => {
+    if (!window.confirm(`Remove ${profile.name || "this explorer"}? This can't be undone.`)) return;
+    dispatch({ type: "REMOVE_PROFILE", id: profile.id });
+  };
+
+  const AVATAR_COLORS = [BLUE.dark, "#7B3FA0", "#2A6B4A", "#C0392B", "#B8860B", "#1A6E8F"];
+  const avatarColor = (id) => AVATAR_COLORS[Math.abs([...id].reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_COLORS.length];
 
   const handleReset = () => {
     dispatch({ type: "RESET_PROGRESS" });
@@ -51,6 +76,57 @@ export function ParentModeSheet({ onClose }) {
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, letterSpacing: 1 }}>{S.parentMode}</div>
               <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#8BA0B8", fontSize: 13 }}>{t(S.manageAdventure, {name: state.userName || "Ranger"})}</div>
             </div>
+          </div>
+
+          {/* Explorers / profile picker */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 15, letterSpacing: 1, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Users size={16} color={BLUE.dark} />{S.explorers}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              {profileList.map(profile => {
+                const isActive = profile.id === state.activeProfileId;
+                const foundN = Object.values(profile.discovered).filter(Boolean).length;
+                return (
+                  <div key={profile.id} style={{ display: "flex", alignItems: "center", gap: 12, background: isActive ? BLUE.pale : "white", borderRadius: 14, padding: "10px 12px", border: `2px solid ${isActive ? BLUE.bright : BLUE.light}` }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: avatarColor(profile.id), color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Luckiest Guy',cursive", fontSize: 16, flexShrink: 0 }}>
+                      {(profile.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: BLUE.dark, fontWeight: 700 }}>{profile.name || "Ranger"}</div>
+                      <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 12, color: "#8BA0B8" }}>{t(S.foundCount, { n: foundN })}</div>
+                    </div>
+                    {isActive ? (
+                      <div style={{ background: BLUE.bright, color: "white", borderRadius: 10, padding: "5px 10px", fontFamily: "'Luckiest Guy',cursive", fontSize: 11, flexShrink: 0 }}>{S.activeLabel}</div>
+                    ) : (
+                      <button onClick={() => handleSwitchProfile(profile.id)} style={{ background: BLUE.mid, color: "white", border: "none", borderRadius: 10, padding: "6px 12px", fontFamily: "'Luckiest Guy',cursive", fontSize: 12, cursor: "pointer", flexShrink: 0 }}>{S.switchTo}</button>
+                    )}
+                    {profileList.length > 1 && (
+                      <button onClick={() => handleRemoveProfile(profile)} style={{ width: 28, height: 28, borderRadius: "50%", background: "#FFE8E8", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <X size={12} color="#E74C3C" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {!addProfileMode ? (
+              <button onClick={() => setAddProfileMode(true)} style={{ width: "100%", padding: "12px", background: "white", border: `2px dashed ${BLUE.light}`, borderRadius: 14, fontFamily: "'Patrick Hand',cursive", fontSize: 15, color: BLUE.mid, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Plus size={18} color={BLUE.mid} /> {S.addExplorer}
+              </button>
+            ) : (
+              <div style={{ background: BLUE.sky, borderRadius: 16, padding: "16px", border: `2px solid ${BLUE.light}` }}>
+                <input
+                  autoFocus
+                  value={newProfileName}
+                  onChange={e => setNewProfileName(e.target.value)}
+                  placeholder={S.whatsExplorerName}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `2px solid ${BLUE.light}`, fontFamily: "'Patrick Hand',cursive", fontSize: 16, color: BLUE.dark, background: "white", marginBottom: 10, outline: "none", boxSizing: "border-box" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setAddProfileMode(false); setNewProfileName(""); }} style={{ flex: 1, padding: "10px", background: "#F0F5FA", border: "none", borderRadius: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, cursor: "pointer" }}>{S.cancel}</button>
+                  <button onClick={handleAddProfile} disabled={!newProfileName.trim()} style={{ flex: 2, padding: "10px", background: newProfileName.trim() ? `linear-gradient(135deg,${BLUE.mid},${BLUE.dark})` : "#D0DDE8", border: "none", borderRadius: 12, fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: newProfileName.trim() ? "white" : "#A0B0C0", cursor: newProfileName.trim() ? "pointer" : "default" }}>{S.addIt}</button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Custom items section */}

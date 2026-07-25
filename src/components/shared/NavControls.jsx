@@ -1,10 +1,10 @@
 import { Volume2, VolumeX, Home, Search, Trophy, BookOpen, Calculator, Gamepad2, BookMarked } from "lucide-react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { useLang } from "../../hooks/useLang.js";
 import { BLUE } from "../../data/constants.js";
 
 export function LangToggle() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const lang = state.lang || "en";
   return (
     <button
@@ -19,7 +19,7 @@ export function LangToggle() {
 }
 
 export function MuteButton() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   return (
     <button onClick={() => dispatch({ type: "SET_MUTED", muted: !state.muted })} title={state.muted ? "Unmute" : "Mute"}
       style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -28,7 +28,7 @@ export function MuteButton() {
 }
 
 export function BottomNav() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { activeTab, newBadgeCount } = state;
   const { S } = useLang();
   const tabs = [

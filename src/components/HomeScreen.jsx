@@ -1,5 +1,5 @@
 import { Search, BookOpen, Calculator, Trophy, BookMarked, Compass } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE, getRank } from "../data/constants.js";
 import { t } from "../data/strings.js";
@@ -7,7 +7,7 @@ import { PACKS } from "../data/packs/index.js";
 import { DailyChallengeBanner } from "./DailyChallengeBanner.jsx";
 
 export function HomeScreen() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const { discovered, earnedBadges, discoveryLog } = state;
   const pack = PACKS[state.selectedPack];

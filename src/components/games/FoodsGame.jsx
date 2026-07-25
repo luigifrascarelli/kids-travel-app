@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Repeat2, Lightbulb } from "lucide-react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { useLang } from "../../hooks/useLang.js";
 import { useAudio } from "../../hooks/useAudio.js";
 import { BLUE } from "../../data/constants.js";
@@ -9,7 +9,7 @@ import { shuffle } from "../../utils/helpers.js";
 import { WORLD_COUNTRIES, WORLD_FOODS } from "../../data/gamesData.js";
 
 export function FoodsGame({ mode, onBack }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const { speakPhrase, speakCorrect, speakTryAgain } = useAudio();
   const gameId = mode === "spot" ? "foodsSpot" : "foodsMatch";

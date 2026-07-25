@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Volume2, Calculator, Zap, Target, Lock } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { useAudio } from "../hooks/useAudio.js";
 import { BLUE } from "../data/constants.js";
@@ -21,7 +21,7 @@ export function makeChoices(answer) {
   return shuffle([answer, ...wrong]);
 }
 export function MathTab() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const audio = useAudio();
   const { S } = useLang();
   const { mathStats, discovered } = state;

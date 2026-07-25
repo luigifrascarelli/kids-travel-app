@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Repeat2, BookOpen, Star, Play } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { useAudio } from "../hooks/useAudio.js";
 import { BLUE } from "../data/constants.js";
@@ -10,7 +10,7 @@ import { shuffle, getDecoys } from "../utils/helpers.js";
 import { ItemCharacter } from "./icons/CharacterArt.jsx";
 
 export function SpellingGame({ item, onClose }) {
-  const { dispatch } = useApp();
+  const { dispatch } = useProfile();
   const { S } = useLang();
   const { speakWord, speakCorrect, speakTryAgain } = useAudio();
   const pack = PACKS["montana"];
@@ -66,7 +66,7 @@ export function SpellingGame({ item, onClose }) {
 }
 
 export function SpellingTab() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);

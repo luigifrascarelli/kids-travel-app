@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Gamepad2 } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE } from "../data/constants.js";
 import { WORLD_FOODS } from "../data/gamesData.js";
@@ -8,7 +8,7 @@ import { FlagGame } from "./games/FlagGame.jsx";
 import { FoodsGame } from "./games/FoodsGame.jsx";
 
 export function GamesTab() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const [activeGame, setActiveGame] = useState(null); // { type, mode }
   const gp = state.gamesProgress || {};

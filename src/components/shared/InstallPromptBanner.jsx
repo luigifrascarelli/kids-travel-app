@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { BLUE } from "../../data/constants.js";
 
 export function InstallPromptBanner() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const lang = state.lang || "en";
   const [prompt, setPrompt] = useState(null);
   const [dismissed, setDismissed] = useState(() => {

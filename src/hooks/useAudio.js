@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "./useProfile.js";
 
 export function useAudio() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { muted } = state;
   const lang = state.lang || "en";
   const name = state.userName || (lang === "es" ? "Explorador" : "Ranger");

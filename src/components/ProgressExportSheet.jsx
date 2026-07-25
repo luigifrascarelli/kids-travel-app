@@ -1,12 +1,12 @@
 import { X, Share2, Printer } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE, getRank } from "../data/constants.js";
 import { t } from "../data/strings.js";
 import { PACKS } from "../data/packs/index.js";
 
 export function ProgressExportSheet({ onClose }) {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const { discovered, earnedBadges, mathStats, spellingStars, discoveryLog, dailyChallenge } = state;
   const pack = PACKS[state.selectedPack];

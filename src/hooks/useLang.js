@@ -1,8 +1,8 @@
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "./useProfile.js";
 import { STRINGS, t } from "../data/strings.js";
 
 export function useLang() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const lang = state.lang || "en";
   const S = STRINGS[lang];
   return { lang, S, t };

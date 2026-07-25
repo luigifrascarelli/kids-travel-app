@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Lightbulb, Search, CheckCircle2, Trophy } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { useAudio } from "../hooks/useAudio.js";
 import { BLUE } from "../data/constants.js";
@@ -10,7 +10,7 @@ import { ItemCharacter } from "./icons/CharacterArt.jsx";
 import { ZoneIcon } from "./icons/ZoneIcons.jsx";
 
 export function DetailSheet({ item, zone, onClose }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const { speakFound } = useAudio();
   const [pressing, setPressing] = useState(false);
@@ -60,7 +60,7 @@ export function DetailSheet({ item, zone, onClose }) {
 }
 
 export function ItemCard({ item, zone, onTap }) {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const discovered = state.discovered[item.id];
   const [pressing, setPressing] = useState(false);
@@ -79,7 +79,7 @@ export function ItemCard({ item, zone, onTap }) {
 }
 
 export function ZoneTab({ zone, active, onClick }) {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const count = zone.items.filter(i => state.discovered[i.id]).length;
   return (
@@ -92,7 +92,7 @@ export function ZoneTab({ zone, active, onClick }) {
 }
 
 export function FieldGuideTab() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const [activeZoneId, setActiveZoneId] = useState(pack.zones[0].id);

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Award } from "lucide-react";
-import { AppProvider, useApp } from "./context/AppContext.jsx";
+import { AppProvider } from "./context/AppContext.jsx";
+import { useProfile } from "./hooks/useProfile.js";
 import { useLang } from "./hooks/useLang.js";
 import { BLUE, getRank } from "./data/constants.js";
 import { PACKS } from "./data/packs/index.js";
@@ -20,7 +21,7 @@ import { GamesTab } from "./components/GamesTab.jsx";
 import { JournalTab } from "./components/JournalTab.jsx";
 
 function AppShell() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { activeTab, celebrating, onboardingDone } = state;
   const { S } = useLang();   // Phase 7: was missing, caused shellS crash
   const pack = PACKS[state.selectedPack];

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { useLang } from "../../hooks/useLang.js";
 import { BLUE } from "../../data/constants.js";
 import { t } from "../../data/strings.js";
@@ -12,7 +12,7 @@ const KEYBOARD_ROWS = [
 ];
 
 export function OnboardingScreen() {
-  const { dispatch } = useApp();
+  const { dispatch } = useProfile();
   const { S } = useLang();
   const [screen, setScreen] = useState(0); // 0=name, 1=location, 2=badge
   const [name, setName] = useState("");

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Star, MapPin, BookMarked, Search, Trophy, Calculator, BookOpen, Share2, Award } from "lucide-react";
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE, RANKS, getRank } from "../data/constants.js";
 import { t } from "../data/strings.js";
@@ -8,7 +8,7 @@ import { PACKS } from "../data/packs/index.js";
 import { ProgressExportSheet } from "./ProgressExportSheet.jsx";
 
 export function MontanaMap() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
@@ -44,7 +44,7 @@ export function MontanaMap() {
 }
 
 export function JournalTab() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const { S } = useLang();
   const { discovered, discoveryLog, earnedBadges, mathStats, spellingStars } = state;
   const pack = PACKS[state.selectedPack];

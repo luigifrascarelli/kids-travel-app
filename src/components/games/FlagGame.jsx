@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Repeat2 } from "lucide-react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { useLang } from "../../hooks/useLang.js";
 import { useAudio } from "../../hooks/useAudio.js";
 import { BLUE } from "../../data/constants.js";
@@ -8,7 +8,7 @@ import { shuffle } from "../../utils/helpers.js";
 import { US_STATES, WORLD_COUNTRIES } from "../../data/gamesData.js";
 
 export function FlagGame({ mode, onBack }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const { speakPhrase, speakCorrect, speakTryAgain, muted } = useAudio();
   const items = mode === "us" ? US_STATES : WORLD_COUNTRIES;

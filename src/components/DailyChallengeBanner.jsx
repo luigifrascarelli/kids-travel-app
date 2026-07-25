@@ -1,11 +1,11 @@
-import { useApp } from "../context/AppContext.jsx";
+import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
 import { BLUE } from "../data/constants.js";
 import { t } from "../data/strings.js";
 import { getTodayKey } from "../data/constants.js";
 
 export function DailyChallengeBanner() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch } = useProfile();
   const { S } = useLang();
   const { dailyChallenge } = state;
   const todayKey = getTodayKey();

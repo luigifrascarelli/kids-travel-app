@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useApp } from "../../context/AppContext.jsx";
+import { useProfile } from "../../hooks/useProfile.js";
 import { BLUE } from "../../data/constants.js";
 
 export function SWUpdateBanner() {
-  const { state } = useApp();
+  const { state } = useProfile();
   const lang = state.lang || "en";
   const [show, setShow] = useState(false);
 
