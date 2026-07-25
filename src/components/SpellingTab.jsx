@@ -30,7 +30,7 @@ export function SpellingGame({ item, onClose }) {
   };
   const handleDone = () => { dispatch({ type: "COMPLETE_SPELLING", itemId: item.id }); onClose(); };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: `linear-gradient(160deg,${BLUE.deepest},${BLUE.dark} 60%,${BLUE.mid})`, display: "flex", flexDirection: "column", animation: "fadeIn 0.25s ease", maxWidth: 600, margin: "0 auto" }}>
+    <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 200, background: `linear-gradient(160deg,${BLUE.deepest},${BLUE.dark} 60%,${BLUE.mid})`, display: "flex", flexDirection: "column", animation: "fadeIn 0.25s ease", maxWidth: 600, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
         <button onClick={onClose} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} color="white" /></button>
         <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 18, letterSpacing: 2 }}>{S.wordSpotter}</div>

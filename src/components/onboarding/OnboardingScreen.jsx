@@ -40,7 +40,7 @@ export function OnboardingScreen() {
   }, [screen]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 500, background: `linear-gradient(160deg,${BLUE.deepest},${BLUE.dark} 50%,${BLUE.mid})`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", maxWidth: 600, margin: "0 auto", overflow: "hidden" }}>
+    <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 500, background: `linear-gradient(160deg,${BLUE.deepest},${BLUE.dark} 50%,${BLUE.mid})`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", maxWidth: 600, margin: "0 auto", overflow: "hidden" }}>
       {/* Stars bg */}
       {[...Array(24)].map((_, i) => <div key={i} style={{ position: "absolute", left: `${(i * 37 + 11) % 100}%`, top: `${(i * 53 + 7) % 100}%`, width: 2 + (i % 3), height: 2 + (i % 3), borderRadius: "50%", background: "white", opacity: 0.2 + (i % 4) * 0.1, pointerEvents: "none" }} />)}
 
