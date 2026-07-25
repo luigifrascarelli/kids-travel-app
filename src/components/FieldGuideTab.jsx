@@ -22,7 +22,7 @@ export function DetailSheet({ item, zone, onClose }) {
   const handleFound = () => { setJustFound(true); speakFound(displayName); setTimeout(() => { dispatch({ type: "DISCOVER_ITEM", itemId: item.id }); onClose(); }, 900); };
   return (
     <>
-      <div onClick={onClose} style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 100, background: "rgba(13,45,79,0.5)", WebkitBackdropFilter: "blur(4px)", backdropFilter: "blur(4px)", animation: "fadeIn 0.2s ease" }} />
+      <div onClick={onClose} style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 100, background: "rgba(13,45,79,0.5)", WebkitBackdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", backdropFilter: "blur(4px)", animation: "fadeIn 0.2s ease" }} />
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 101, background: "white", borderRadius: "28px 28px 0 0", padding: "0 0 40px", boxShadow: "0 -12px 60px rgba(13,45,79,0.25)", animation: "slideUp 0.35s cubic-bezier(0.32,0.72,0,1)", maxWidth: 600, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px 0" }}>
           <div style={{ width: 40 }} />
