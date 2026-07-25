@@ -45,7 +45,7 @@ export function SpellingGame({ item, onClose }) {
           const isCorrect = choice.id === item.id; const isWrong = wrongId === choice.id; const done = phase === "correct";
           return (
             <div key={choice.id} onClick={() => !done && handleChoice(choice)} style={{ borderRadius: 20, background: done && isCorrect ? "linear-gradient(135deg,#2ECC71,#27AE60)" : isWrong ? "linear-gradient(135deg,#FF6B6B,#E74C3C)" : "rgba(255,255,255,0.12)", border: done && isCorrect ? "3px solid #7AE8A0" : isWrong ? "3px solid #FF6B6B" : "3px solid rgba(255,255,255,0.2)", padding: "20px 10px 16px", textAlign: "center", cursor: done ? "default" : "pointer", opacity: done && !isCorrect ? 0.35 : 1, transition: "all 0.2s", animation: isWrong ? "shake 0.4s ease" : done && isCorrect ? "popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275)" : "none", boxShadow: done && isCorrect ? "0 0 28px #2ECC7180" : "none" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ItemCharacter itemId={choice.id} emoji={choice.emoji} size={64} /></div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ItemCharacter itemId={choice.id} size={64} /></div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 13, lineHeight: 1.2 }}>{li(choice, "name", lang)}</div>
             </div>
           );

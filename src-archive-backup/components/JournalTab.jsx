@@ -44,44 +44,6 @@ export function MontanaMap() {
   );
 }
 
-export function GenericPackMap({ pack }) {
-  const { state } = useProfile();
-  const allItems = pack.zones.flatMap(z => z.items);
-  const foundItems = allItems.filter(i => state.discovered[i.id]);
-  const pct = allItems.length ? foundItems.length / allItems.length : 0;
-  const tier = pct === 0 ? 0 : pct < 0.2 ? 1 : pct < 0.5 ? 2 : pct < 0.8 ? 3 : 4;
-  const glowColor = tier >= 3 ? BLUE.gold : BLUE.bright;
-  return (
-    <div style={{ margin: "0 16px", background: `linear-gradient(145deg,${BLUE.deepest},${BLUE.dark})`, borderRadius: 24, padding: "16px", boxShadow: `0 8px 32px ${BLUE.deepest}60`, position: "relative", overflow: "hidden" }}>
-      {[...Array(20)].map((_, i) => <div key={i} style={{ position: "absolute", left: `${(i * 37 + 11) % 100}%`, top: `${(i * 53 + 7) % 100}%`, width: 2, height: 2, borderRadius: "50%", background: "white", opacity: 0.3 + (i % 3) * 0.2 }} />)}
-      <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 13, letterSpacing: 2, textAlign: "center", marginBottom: 4, position: "relative" }}>{pack.emoji} {pack.name.toUpperCase()}</div>
-      <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 12, textAlign: "center", marginBottom: 14, position: "relative" }}>{pack.tagline}</div>
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", WebkitOverflowScrolling: "touch", padding: "2px 2px 6px", position: "relative" }}>
-        {pack.zones.map(z => {
-          const found = z.items.filter(i => state.discovered[i.id]);
-          return (
-            <div key={z.id} style={{ flexShrink: 0, width: 108, background: "rgba(255,255,255,0.08)", border: `2px solid ${found.length > 0 ? z.accent : "rgba(255,255,255,0.15)"}`, borderRadius: 16, padding: "10px 10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>{z.emoji}</div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 10, letterSpacing: 0.5, marginBottom: 6, lineHeight: 1.2, minHeight: 24 }}>{z.label}</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: z.accent, fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{found.length}/{z.items.length}</div>
-              <div style={{ display: "flex", justifyContent: "center", gap: 2, flexWrap: "wrap", minHeight: 18 }}>
-                {found.slice(0, 6).map(i => <span key={i.id} style={{ fontSize: 13 }}>{i.emoji}</span>)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, position: "relative" }}>
-        <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.light, fontSize: 13 }}>{foundItems.length} / {allItems.length} found</div>
-        <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.gold, fontSize: 14 }}>{Math.round(pct * 100)}%</div>
-      </div>
-      <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 20, height: 8, marginTop: 8, overflow: "hidden", position: "relative" }}>
-        <div style={{ height: "100%", borderRadius: 20, background: `linear-gradient(90deg,${BLUE.bright},${BLUE.gold})`, width: `${Math.max(pct * 100, foundItems.length > 0 ? 3 : 0)}%`, transition: "width 0.8s ease", boxShadow: `0 0 10px ${glowColor}80` }} />
-      </div>
-    </div>
-  );
-}
-
 export function JournalTab() {
   const { state } = useProfile();
   const { S, lang } = useLang();
@@ -149,7 +111,7 @@ export function JournalTab() {
       {view === "map" && (
         <div>
           <div style={{ padding: "0 16px 14px", fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid, textAlign: "center" }}>{S.everyTimeYouFind}</div>
-          {pack.id === "montana" ? <MontanaMap /> : <GenericPackMap pack={pack} />}
+          <MontanaMap />
           <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 8 }}>
             {pack.zones.map(z => {
               const found = z.items.filter(i => discovered[i.id]).length;

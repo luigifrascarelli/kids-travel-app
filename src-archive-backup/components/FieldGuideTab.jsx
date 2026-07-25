@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Lightbulb, Search, CheckCircle2, Trophy } from "lucide-react";
 import { useProfile } from "../hooks/useProfile.js";
 import { useLang } from "../hooks/useLang.js";
@@ -9,7 +9,6 @@ import { PACKS } from "../data/packs/index.js";
 import { li } from "../utils/helpers.js";
 import { ItemCharacter } from "./icons/CharacterArt.jsx";
 import { ZoneIcon } from "./icons/ZoneIcons.jsx";
-import { UsaStatesMap } from "./UsaStatesMap.jsx";
 
 export function DetailSheet({ item, zone, onClose }) {
   const { state, dispatch } = useProfile();
@@ -31,7 +30,7 @@ export function DetailSheet({ item, zone, onClose }) {
         </div>
         <div style={{ height: 6, margin: "10px 0 0", background: `linear-gradient(90deg,${zone.color},${zone.accent})` }} />
         <div style={{ textAlign: "center", padding: "24px 24px 0", position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "center", transform: justFound ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s" }}><ItemCharacter itemId={item.id} emoji={item.emoji} size={110} /></div>
+          <div style={{ display: "flex", justifyContent: "center", transform: justFound ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s" }}><ItemCharacter itemId={item.id} size={110} /></div>
           {justFound && <div style={{ position: "absolute", top: 20, right: 24, background: `linear-gradient(135deg,${zone.accent},${zone.color})`, color: "white", borderRadius: 20, padding: "6px 16px", fontFamily: "'Luckiest Guy',cursive", fontSize: 14, letterSpacing: 1, animation: "popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)" }}>✓ FOUND!</div>}
         </div>
         <div style={{ padding: "16px 24px 0" }}>
@@ -73,7 +72,7 @@ export function ItemCard({ item, zone, onTap }) {
       style={{ borderRadius: 22, background: discovered ? `linear-gradient(160deg,${zone.bg},white)` : "white", border: discovered ? `3px solid ${zone.accent}` : `2px solid ${BLUE.light}`, boxShadow: pressing ? `0 2px 8px ${zone.accent}20` : discovered ? `0 8px 28px ${zone.accent}30` : "0 4px 16px rgba(13,45,79,0.09)", transform: pressing ? "scale(0.97)" : "scale(1)", transition: "all 0.15s", cursor: "pointer", padding: "20px 14px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, position: "relative", overflow: "hidden", userSelect: "none" }}
     >
       {discovered && <div style={{ position: "absolute", top: 10, right: 10, background: `linear-gradient(135deg,${zone.accent},${zone.color})`, color: "white", borderRadius: 20, padding: "3px 10px", fontFamily: "'Luckiest Guy',cursive", fontSize: 10, letterSpacing: 1 }}>✓ FOUND</div>}
-      <div style={{ width: "100%", display: "flex", justifyContent: "center" }}><ItemCharacter itemId={item.id} emoji={item.emoji} size={76} /></div>
+      <div style={{ width: "100%", display: "flex", justifyContent: "center" }}><ItemCharacter itemId={item.id} size={76} /></div>
       <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: discovered ? zone.color : BLUE.dark, textAlign: "center", lineHeight: 1.3 }}>{li(item, "name", lang)}</div>
       <div style={{ background: discovered ? `${zone.accent}18` : BLUE.pale, borderRadius: 10, padding: "6px 12px", fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: discovered ? zone.color : BLUE.mid, border: `1px solid ${discovered ? zone.accent + "40" : BLUE.light}`, width: "100%", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
         {discovered ? <><CheckCircle2 size={13} color={zone.color} />{S.readMore}</> : <><Search size={12} color={BLUE.mid} />{S.learnMore}</>}
@@ -99,60 +98,40 @@ export function FieldGuideTab() {
   const { state } = useProfile();
   const { S } = useLang();
   const pack = PACKS[state.selectedPack];
-  const isMapPack = pack.mapType === "usaStates";
-  const firstPopulatedZone = pack.zones.find(z => z.items.length > 0) || pack.zones[0];
-  const [activeZoneId, setActiveZoneId] = useState(firstPopulatedZone.id);
+  const [activeZoneId, setActiveZoneId] = useState(pack.zones[0].id);
   const [openItem, setOpenItem] = useState(null);
-  useEffect(() => { setActiveZoneId(firstPopulatedZone.id); setOpenItem(null); }, [pack.id]);
   const zone = pack.zones.find(z => z.id === activeZoneId);
   const openZone = openItem ? pack.zones.find(z => z.items.some(i => i.id === openItem.id)) : null;
   // Include custom items in wildlife zone display
   const customZoneItems = state.customItems.map(ci => ({ ...ci, isCustom: true }));
   const displayItems = activeZoneId === "wildlife" ? [...zone.items, ...customZoneItems] : zone.items;
-  const zoneIsComingSoon = isMapPack && zone.items.length === 0;
 
   return (
     <div style={{ paddingBottom: 100 }}>
-      {isMapPack ? (
-        <div style={{ padding: "14px 16px 4px" }}>
-          <UsaStatesMap pack={pack} discovered={state.discovered} activeStateId={activeZoneId} onSelectState={setActiveZoneId} />
-        </div>
-      ) : (
-        <div style={{ display: "flex", gap: 6, padding: "14px 16px 10px", background: "white", boxShadow: `0 3px 14px ${BLUE.deepest}12` }}>
-          {pack.zones.map(z => <ZoneTab key={z.id} zone={z} active={activeZoneId === z.id} onClick={() => setActiveZoneId(z.id)} />)}
-        </div>
-      )}
-      {zoneIsComingSoon ? (
-        <div style={{ margin: "16px 16px 0", background: BLUE.pale, border: `2px dashed ${BLUE.light}`, borderRadius: 20, padding: "28px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{zone.emoji || "🗺️"}</div>
-          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: BLUE.dark, fontSize: 20, marginBottom: 6 }}>{zone.label}</div>
-          <div style={{ fontFamily: "'Patrick Hand',cursive", color: BLUE.mid, fontSize: 14 }}>{S.stateComingSoonDesc || "This state is coming in a future update — tap another highlighted state!"}</div>
-        </div>
-      ) : (
-        <>
-          <div style={{ padding: "18px 20px 6px", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 16, background: `linear-gradient(135deg,${zone.accent},${zone.color})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 6px 18px ${zone.accent}45`, flexShrink: 0 }}>{isMapPack ? <span style={{ fontSize: 24 }}>{zone.emoji}</span> : <ZoneIcon zoneId={zone.id} size={28} active={true} />}</div>
-            <div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: zone.color, fontSize: 22, letterSpacing: 1, lineHeight: 1 }}>{zone.label}</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#6B8BAA", fontSize: 13, marginTop: 2 }}>
-                {t(S.discovered, {found: zone.items.filter(i => state.discovered[i.id]).length, total: zone.items.length})} · <span style={{ color: zone.accent }}>{t(S.stillOutThere, {n: zone.items.length - zone.items.filter(i => state.discovered[i.id]).length})}</span>
-              </div>
-            </div>
+      <div style={{ display: "flex", gap: 6, padding: "14px 16px 10px", background: "white", boxShadow: `0 3px 14px ${BLUE.deepest}12` }}>
+        {pack.zones.map(z => <ZoneTab key={z.id} zone={z} active={activeZoneId === z.id} onClick={() => setActiveZoneId(z.id)} />)}
+      </div>
+      <div style={{ padding: "18px 20px 6px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 52, height: 52, borderRadius: 16, background: `linear-gradient(135deg,${zone.accent},${zone.color})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 6px 18px ${zone.accent}45`, flexShrink: 0 }}><ZoneIcon zoneId={zone.id} size={28} active={true} /></div>
+        <div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: zone.color, fontSize: 22, letterSpacing: 1, lineHeight: 1 }}>{zone.label}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "#6B8BAA", fontSize: 13, marginTop: 2 }}>
+            {t(S.discovered, {found: zone.items.filter(i => state.discovered[i.id]).length, total: zone.items.length})} · <span style={{ color: zone.accent }}>{t(S.stillOutThere, {n: zone.items.length - zone.items.filter(i => state.discovered[i.id]).length})}</span>
           </div>
-          <div style={{ margin: "10px 16px 14px", background: BLUE.pale, border: `1.5px dashed ${BLUE.light}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid }}>
-            <Search size={18} color={BLUE.mid} style={{ flexShrink: 0 }} /><span>{S.spotSomething} <strong>"{S.iFoundIt}"</strong></span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14, padding: "0 16px" }}>
-            {displayItems.map(item => <ItemCard key={item.id} item={item} zone={zone} onTap={() => setOpenItem(item)} />)}
-          </div>
-          {zone.items.every(i => state.discovered[i.id]) && (
-            <div style={{ margin: "20px 16px 0", background: `linear-gradient(135deg,${zone.color},${zone.accent})`, borderRadius: 20, padding: "20px 24px", textAlign: "center", boxShadow: `0 10px 30px ${zone.accent}45` }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}><Trophy size={40} color="white" /></div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22 }}>{S.zoneComplete}</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.9)", fontSize: 15, marginTop: 6 }}>{t(S.zoneCompleteDesc, {zone: zone.label.toLowerCase()})}</div>
-            </div>
-          )}
-        </>
+        </div>
+      </div>
+      <div style={{ margin: "10px 16px 14px", background: BLUE.pale, border: `1.5px dashed ${BLUE.light}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Patrick Hand',cursive", fontSize: 14, color: BLUE.mid }}>
+        <Search size={18} color={BLUE.mid} style={{ flexShrink: 0 }} /><span>{S.spotSomething} <strong>"{S.iFoundIt}"</strong></span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14, padding: "0 16px" }}>
+        {displayItems.map(item => <ItemCard key={item.id} item={item} zone={zone} onTap={() => setOpenItem(item)} />)}
+      </div>
+      {zone.items.every(i => state.discovered[i.id]) && (
+        <div style={{ margin: "20px 16px 0", background: `linear-gradient(135deg,${zone.color},${zone.accent})`, borderRadius: 20, padding: "20px 24px", textAlign: "center", boxShadow: `0 10px 30px ${zone.accent}45` }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}><Trophy size={40} color="white" /></div>
+          <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 22 }}>{S.zoneComplete}</div>
+          <div style={{ fontFamily: "'Patrick Hand',cursive", color: "rgba(255,255,255,0.9)", fontSize: 15, marginTop: 6 }}>{t(S.zoneCompleteDesc, {zone: zone.label.toLowerCase()})}</div>
+        </div>
       )}
       {openItem && openZone && <DetailSheet item={openItem} zone={openZone} onClose={() => setOpenItem(null)} />}
     </div>

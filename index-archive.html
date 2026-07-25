@@ -179,22 +179,8 @@
     <div id="root"></div>
 
     <!-- ── Service Worker registration ───────────────────────── -->
-    <!--
-      IMPORTANT: only registers on real deployed hosts, never on
-      localhost/127.0.0.1/[::1]. The cache-first strategy is great
-      for offline use on a trip, but it's actively harmful during
-      local development — it silently serves stale JS/component
-      code under the same URL even after source files change on
-      disk, since CACHE_NAME never changes between builds. This
-      caused real confusion during Phase 10 development (files
-      that already existed from an earlier session kept serving
-      old cached content while brand-new files fetched fine).
-      If you ever need to test PWA/offline behavior locally, run
-      `npm run build && npm run preview` instead of `npm run dev`.
-    -->
     <script>
-      const isLocalDev = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
-      if ("serviceWorker" in navigator && !isLocalDev) {
+      if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker
             .register("/sw.js", { scope: "/" })
@@ -218,17 +204,6 @@
               console.warn("SW registration failed:", err);
             });
         });
-      } else if (isLocalDev && "serviceWorker" in navigator) {
-        // Belt-and-suspenders: actively unregister + purge any service worker
-        // and cache left over from before this fix, so localhost stays clean.
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (r) { r.unregister(); });
-        });
-        if (window.caches) {
-          caches.keys().then(function (keys) {
-            keys.forEach(function (k) { caches.delete(k); });
-          });
-        }
       }
     </script>
 
