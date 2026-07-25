@@ -5,6 +5,7 @@ import { useLang } from "../hooks/useLang.js";
 import { BLUE, RANKS, getRank } from "../data/constants.js";
 import { t } from "../data/strings.js";
 import { PACKS } from "../data/packs/index.js";
+import { li } from "../utils/helpers.js";
 import { ProgressExportSheet } from "./ProgressExportSheet.jsx";
 
 export function MontanaMap() {
@@ -45,7 +46,7 @@ export function MontanaMap() {
 
 export function JournalTab() {
   const { state } = useProfile();
-  const { S } = useLang();
+  const { S, lang } = useLang();
   const { discovered, discoveryLog, earnedBadges, mathStats, spellingStars } = state;
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
@@ -154,7 +155,7 @@ export function JournalTab() {
                     <div key={ei} style={{ background: "white", borderRadius: 18, padding: "14px 16px", border: `2px solid ${zone.accent}30`, display: "flex", alignItems: "center", gap: 14, boxShadow: `0 3px 12px ${zone.accent}18` }}>
                       <div style={{ width: 52, height: 52, borderRadius: 14, flexShrink: 0, background: `linear-gradient(135deg,${zone.bg},white)`, border: `2px solid ${zone.accent}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{item.emoji}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.dark }}>{item.name}</div>
+                        <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.dark }}>{li(item, "name", lang)}</div>
                         <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 12, color: zone.color, background: `${zone.accent}15`, borderRadius: 8, padding: "2px 8px", display: "inline-block", marginTop: 3 }}>{zone.emoji} {zone.label}</div>
                       </div>
                       <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 11, color: "#8BA0B8", textAlign: "right", flexShrink: 0 }}>

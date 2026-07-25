@@ -6,16 +6,19 @@ import { useAudio } from "../hooks/useAudio.js";
 import { BLUE } from "../data/constants.js";
 import { t } from "../data/strings.js";
 import { PACKS } from "../data/packs/index.js";
+import { li } from "../utils/helpers.js";
 import { ItemCharacter } from "./icons/CharacterArt.jsx";
 import { ZoneIcon } from "./icons/ZoneIcons.jsx";
 
 export function DetailSheet({ item, zone, onClose }) {
   const { state, dispatch } = useProfile();
-  const { S } = useLang();
+  const { S, lang } = useLang();
   const { speakFound } = useAudio();
   const [pressing, setPressing] = useState(false);
   const [justFound, setJustFound] = useState(false);
-  const handleFound = () => { setJustFound(true); speakFound(item.name); setTimeout(() => { dispatch({ type: "DISCOVER_ITEM", itemId: item.id }); onClose(); }, 900); };
+  const displayName = li(item, "name", lang);
+  const displayFact = li(item, "fact", lang);
+  const handleFound = () => { setJustFound(true); speakFound(displayName); setTimeout(() => { dispatch({ type: "DISCOVER_ITEM", itemId: item.id }); onClose(); }, 900); };
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(13,45,79,0.5)", backdropFilter: "blur(4px)", animation: "fadeIn 0.2s ease" }} />
@@ -32,14 +35,14 @@ export function DetailSheet({ item, zone, onClose }) {
         </div>
         <div style={{ padding: "16px 24px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 28, color: BLUE.deepest, lineHeight: 1.1, flex: 1 }}>{item.name}</div>
+            <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 28, color: BLUE.deepest, lineHeight: 1.1, flex: 1 }}>{displayName}</div>
             <div style={{ background: `${zone.accent}22`, color: zone.color, borderRadius: 12, padding: "4px 12px", marginLeft: 12, fontFamily: "'Patrick Hand',cursive", fontSize: 12, fontWeight: 700, border: `1.5px solid ${zone.accent}40`, whiteSpace: "nowrap", flexShrink: 0 }}>{zone.emoji} {zone.label}</div>
           </div>
           <div style={{ background: `linear-gradient(135deg,${zone.bg},${BLUE.pale})`, border: `2px solid ${zone.accent}40`, borderRadius: 18, padding: "16px 18px", margin: "16px 0", display: "flex", gap: 12, alignItems: "flex-start" }}>
             <Lightbulb size={28} color={zone.color} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
               <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 11, color: zone.color, letterSpacing: 2, marginBottom: 4 }}>{S.rangerFact}</div>
-              <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 17, color: BLUE.deepest, lineHeight: 1.5 }}>{item.fact}</div>
+              <div style={{ fontFamily: "'Patrick Hand',cursive", fontSize: 17, color: BLUE.deepest, lineHeight: 1.5 }}>{displayFact}</div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
@@ -61,7 +64,7 @@ export function DetailSheet({ item, zone, onClose }) {
 
 export function ItemCard({ item, zone, onTap }) {
   const { state } = useProfile();
-  const { S } = useLang();
+  const { S, lang } = useLang();
   const discovered = state.discovered[item.id];
   const [pressing, setPressing] = useState(false);
   return (
@@ -70,7 +73,7 @@ export function ItemCard({ item, zone, onTap }) {
     >
       {discovered && <div style={{ position: "absolute", top: 10, right: 10, background: `linear-gradient(135deg,${zone.accent},${zone.color})`, color: "white", borderRadius: 20, padding: "3px 10px", fontFamily: "'Luckiest Guy',cursive", fontSize: 10, letterSpacing: 1 }}>✓ FOUND</div>}
       <div style={{ width: "100%", display: "flex", justifyContent: "center" }}><ItemCharacter itemId={item.id} size={76} /></div>
-      <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: discovered ? zone.color : BLUE.dark, textAlign: "center", lineHeight: 1.3 }}>{item.name}</div>
+      <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 15, color: discovered ? zone.color : BLUE.dark, textAlign: "center", lineHeight: 1.3 }}>{li(item, "name", lang)}</div>
       <div style={{ background: discovered ? `${zone.accent}18` : BLUE.pale, borderRadius: 10, padding: "6px 12px", fontFamily: "'Patrick Hand',cursive", fontSize: 13, color: discovered ? zone.color : BLUE.mid, border: `1px solid ${discovered ? zone.accent + "40" : BLUE.light}`, width: "100%", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
         {discovered ? <><CheckCircle2 size={13} color={zone.color} />{S.readMore}</> : <><Search size={12} color={BLUE.mid} />{S.learnMore}</>}
       </div>

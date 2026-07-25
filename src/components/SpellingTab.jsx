@@ -6,24 +6,25 @@ import { useAudio } from "../hooks/useAudio.js";
 import { BLUE } from "../data/constants.js";
 import { t } from "../data/strings.js";
 import { PACKS } from "../data/packs/index.js";
-import { shuffle, getDecoys } from "../utils/helpers.js";
+import { shuffle, getDecoys, li } from "../utils/helpers.js";
 import { ItemCharacter } from "./icons/CharacterArt.jsx";
 
 export function SpellingGame({ item, onClose }) {
-  const { dispatch } = useProfile();
-  const { S } = useLang();
+  const { state, dispatch } = useProfile();
+  const { S, lang } = useLang();
   const { speakWord, speakCorrect, speakTryAgain } = useAudio();
-  const pack = PACKS["montana"];
+  const pack = PACKS[state.selectedPack];
   const choices = useMemo(() => shuffle([item, ...getDecoys(item, pack)]), [item.id]);
   const [phase, setPhase] = useState("question");
   const [revealIdx, setRevealIdx] = useState(-1);
   const [wrongId, setWrongId] = useState(null);
   const letters = item.letters.split("");
+  const displayName = li(item, "name", lang);
   useEffect(() => { speakWord(item.letters); }, []);
   const handleChoice = (choice) => {
     if (phase !== "question") return;
     if (choice.id === item.id) {
-      setPhase("correct"); speakCorrect(`Yes! ${item.name}! Let's spell it!`);
+      setPhase("correct"); speakCorrect(`Yes! ${displayName}! Let's spell it!`);
       let idx = 0; const iv = setInterval(() => { setRevealIdx(i => i + 1); idx++; if (idx >= letters.length) clearInterval(iv); }, 380);
     } else { setWrongId(choice.id); speakTryAgain(); setTimeout(() => setWrongId(null), 900); }
   };
@@ -45,7 +46,7 @@ export function SpellingGame({ item, onClose }) {
           return (
             <div key={choice.id} onClick={() => !done && handleChoice(choice)} style={{ borderRadius: 20, background: done && isCorrect ? "linear-gradient(135deg,#2ECC71,#27AE60)" : isWrong ? "linear-gradient(135deg,#FF6B6B,#E74C3C)" : "rgba(255,255,255,0.12)", border: done && isCorrect ? "3px solid #7AE8A0" : isWrong ? "3px solid #FF6B6B" : "3px solid rgba(255,255,255,0.2)", padding: "20px 10px 16px", textAlign: "center", cursor: done ? "default" : "pointer", opacity: done && !isCorrect ? 0.35 : 1, transition: "all 0.2s", animation: isWrong ? "shake 0.4s ease" : done && isCorrect ? "popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275)" : "none", boxShadow: done && isCorrect ? "0 0 28px #2ECC7180" : "none" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ItemCharacter itemId={choice.id} size={64} /></div>
-              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 13, lineHeight: 1.2 }}>{choice.name}</div>
+              <div style={{ fontFamily: "'Luckiest Guy',cursive", color: "white", fontSize: 13, lineHeight: 1.2 }}>{li(choice, "name", lang)}</div>
             </div>
           );
         })}
@@ -67,16 +68,18 @@ export function SpellingGame({ item, onClose }) {
 
 export function SpellingTab() {
   const { state } = useProfile();
-  const { S } = useLang();
+  const { S, lang } = useLang();
   const pack = PACKS[state.selectedPack];
   const allItems = pack.zones.flatMap(z => z.items);
   const [activeGame, setActiveGame] = useState(null);
-  const [activeCategory, setActiveCategory] = useState("Montana");
-  const bonusCategories = ["Trip", "Fishing", "Horses", "Gear", "Nature"];
-  const allCategories = ["Montana", ...bonusCategories];
+  const mainCategory = pack.name;
+  const [activeCategory, setActiveCategory] = useState(mainCategory);
+  useEffect(() => { setActiveCategory(pack.name); }, [pack.id]);
+  const bonusCategories = Object.keys(pack.bonusCategoryMeta || {});
+  const allCategories = [mainCategory, ...bonusCategories];
   const diffLabel = (word) => { if (word.length <= 3) return { label: "Easy", color: "#2ECC71", bg: "#E8FAF0" }; if (word.length <= 4) return { label: "Medium", color: BLUE.mid, bg: BLUE.pale }; return { label: "Hard", color: "#9B59B6", bg: "#F5EEF8" }; };
-  const activeItems = activeCategory === "Montana" ? allItems : pack.bonusWords.filter(w => w.category === activeCategory);
-  const catMeta = activeCategory === "Montana" ? { emoji: "🏔️", color: BLUE.dark, accent: BLUE.bright, bg: BLUE.sky } : pack.bonusCategoryMeta[activeCategory];
+  const activeItems = activeCategory === mainCategory ? allItems : pack.bonusWords.filter(w => w.category === activeCategory);
+  const catMeta = activeCategory === mainCategory ? { emoji: pack.emoji, color: BLUE.dark, accent: BLUE.bright, bg: BLUE.sky } : pack.bonusCategoryMeta[activeCategory];
   if (activeGame) return <SpellingGame item={activeGame} onClose={() => setActiveGame(null)} />;
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -89,9 +92,9 @@ export function SpellingTab() {
       </div>
       <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {allCategories.map(cat => {
-          const meta = cat === "Montana" ? { emoji: "🏔️", color: BLUE.dark, accent: BLUE.bright } : pack.bonusCategoryMeta[cat];
+          const meta = cat === mainCategory ? { emoji: pack.emoji, color: BLUE.dark, accent: BLUE.bright } : pack.bonusCategoryMeta[cat];
           const isActive = activeCategory === cat;
-          const count = cat === "Montana" ? allItems.length : pack.bonusWords.filter(w => w.category === cat).length;
+          const count = cat === mainCategory ? allItems.length : pack.bonusWords.filter(w => w.category === cat).length;
           return (
             <button key={cat} onClick={() => setActiveCategory(cat)} style={{ flexShrink: 0, background: isActive ? `linear-gradient(135deg,${meta.color},${meta.accent})` : "white", border: `2px solid ${isActive ? "transparent" : meta.accent + "60"}`, borderRadius: 16, padding: "8px 16px", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6, boxShadow: isActive ? `0 4px 14px ${meta.accent}40` : "0 2px 8px rgba(0,0,0,0.06)" }}>
               <span style={{ fontSize: 18 }}>{meta.emoji}</span>
@@ -116,10 +119,10 @@ export function SpellingTab() {
               >
                 <div style={{ width: 56, height: 56, borderRadius: 14, flexShrink: 0, background: `linear-gradient(135deg,${catMeta.bg},white)`, border: `2px solid ${catMeta.accent}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, position: "relative" }}>
                   {item.emoji}
-                  {activeCategory === "Montana" && found && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#2ECC71", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "white" }}>✓</div>}
+                  {activeCategory === mainCategory && found && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#2ECC71", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "white" }}>✓</div>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.dark, marginBottom: 4 }}>{item.name}</div>
+                  <div style={{ fontFamily: "'Luckiest Guy',cursive", fontSize: 16, color: BLUE.dark, marginBottom: 4 }}>{li(item, "name", lang)}</div>
                   <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
                     {item.letters.split("").map((l, i) => <div key={i} style={{ width: 24, height: 26, borderRadius: 6, background: BLUE.pale, border: `1.5px solid ${BLUE.light}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Luckiest Guy',cursive", fontSize: 12, color: BLUE.dark }}>{l}</div>)}
                     <div style={{ marginLeft: 2, background: diff.bg, borderRadius: 8, padding: "2px 8px", fontFamily: "'Patrick Hand',cursive", fontSize: 11, color: diff.color, fontWeight: 700 }}>{diff.label}</div>
