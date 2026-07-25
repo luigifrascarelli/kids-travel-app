@@ -15,7 +15,7 @@ export function BadgeCelebration({ badge, onDone }) {
   const { S } = useLang();
   return (
     <>{<Confetti />}
-      <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,45,79,0.75)", backdropFilter: "blur(8px)", animation: "fadeIn 0.3s ease" }}>
+      <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,45,79,0.75)", WebkitBackdropFilter: "blur(8px)", backdropFilter: "blur(8px)", animation: "fadeIn 0.3s ease" }}>
         <div style={{ background: "white", borderRadius: 32, padding: "44px 36px 36px", textAlign: "center", maxWidth: 340, width: "88%", boxShadow: `0 40px 100px rgba(0,0,0,0.4),0 0 0 6px ${badge.accent}60`, animation: "badgeSlam 0.5s cubic-bezier(0.175,0.885,0.32,1.275)", position: "relative" }}>
           <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(90deg,${BLUE.gold},${BLUE.goldDark})`, borderRadius: 30, padding: "6px 24px", fontFamily: "'Luckiest Guy',cursive", fontSize: 13, color: "white", letterSpacing: 2, border: "3px solid white", whiteSpace: "nowrap" }}>{S.badgeUnlocked}</div>
           <div style={{ width: 120, height: 120, borderRadius: "50%", background: `linear-gradient(135deg,${badge.accent},${badge.color})`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 56, boxShadow: `0 0 0 8px ${badge.accent}30,0 12px 40px ${badge.color}60`, animation: "badgePulse 1.5s ease-in-out infinite" }}>{badge.emoji}</div>
