@@ -1,26 +1,34 @@
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  GABI AVENTURAS — SERVICE WORKER                             ║
-// ║  Cache-first strategy. All app assets cached on install.     ║
+// ║  Network-first for app code (HTML/JS/CSS), cache-first for   ║
+// ║  fonts. This keeps the app fresh for anyone online while     ║
+// ║  still working fully offline once assets have been fetched   ║
+// ║  once (e.g. mid-flight, no wifi).                            ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-const CACHE_NAME = "gabi-aventuras-v1";
+// Bump this string on every deploy that should force a refresh.
+// Changing it changes this file's bytes, which is what makes the
+// browser notice an update is available at all — a static name
+// here means returning visitors can get stuck on an old version
+// forever, since the SW itself never looks "changed" to the browser.
+const CACHE_NAME = "gabi-aventuras-v2";
 
 // Assets to pre-cache on install (app shell)
 const PRECACHE_ASSETS = [
   "/",
   "/index.html",
   "/manifest.json",
-  // Vite builds hashed JS/CSS — we catch those dynamically below
 ];
 
-// Google Fonts — cache on first fetch, serve from cache thereafter
+// Google Fonts — cache on first fetch, serve from cache thereafter.
+// Fonts are genuinely static, so cache-first is correct here.
 const FONT_CACHE = "gabi-fonts-v1";
 const FONT_ORIGINS = [
   "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
 ];
 
-// ── Install: pre-cache the app shell ─────────────────────────
+// ── Install: pre-cache the app shell, activate immediately ────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -30,7 +38,8 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// ── Activate: clean up old caches ────────────────────────────
+// ── Activate: clean up every old cache (any name that isn't the
+//    current CACHE_NAME/FONT_CACHE gets deleted) ───────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -46,7 +55,7 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// ── Fetch: cache-first for everything ────────────────────────
+// ── Fetch ───────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -55,7 +64,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   if (url.protocol === "chrome-extension:") return;
 
-  // Fonts: cache-first with dedicated font cache
+  // Fonts: cache-first with dedicated font cache (unchanged — correct for truly static assets)
   if (FONT_ORIGINS.some((origin) => request.url.startsWith(origin))) {
     event.respondWith(
       caches.open(FONT_CACHE).then((cache) =>
@@ -71,33 +80,35 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // App assets: cache-first, fall back to network, cache new assets
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(request)
+  // App code (HTML navigation, JS, CSS): network-first. Always try
+  // the network for the latest version; only fall back to cache
+  // when offline. This is what actually keeps the app up to date —
+  // cache-first here was the root cause of the site getting stuck.
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(request)
         .then((response) => {
-          // Only cache same-origin successful responses
-          if (
-            response.ok &&
-            url.origin === self.location.origin
-          ) {
+          if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => {
-          // Offline fallback: return cached index.html for navigation requests
-          if (request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-          // For other failed requests, just fail silently
-          return new Response("", { status: 408 });
-        });
-    })
-  );
+        .catch(() =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            if (request.mode === "navigate") {
+              return caches.match("/index.html");
+            }
+            return new Response("", { status: 408 });
+          })
+        )
+    );
+    return;
+  }
+
+  // Anything else cross-origin: just pass through to the network.
+  event.respondWith(fetch(request).catch(() => new Response("", { status: 408 })));
 });
 
 // ── Message: force update from app ───────────────────────────
